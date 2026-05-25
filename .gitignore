@@ -1,0 +1,19 @@
+# Common
+node_modules/
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.vscode/
+.idea/
+
+# Backend specific ignores (if they leak to root)
+aarvionpay-backend/node_modules/
+aarvionpay-backend/.env
+aarvionpay-backend/keys/*.pem
+!aarvionpay-backend/keys/public.pem
+
+# Frontend specific ignores (if they leak to root)
+aarvionpay-frontend/node_modules/
+aarvionpay-frontend/dist/
+aarvionpay-frontend/.env.local
