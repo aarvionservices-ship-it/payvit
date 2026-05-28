@@ -79,7 +79,7 @@ export default function CardComparePage() {
       <main className="pt-24 md:pt-32 pb-32">
         <div className="max-w-7xl mx-auto px-4">
           <div className="mb-10 text-center md:text-left">
-             <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase italic">Compare <span className="text-rose-500 italic">Cards</span></h1>
+             <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-wide">Compare <span className="text-rose-500 italic">Cards</span></h1>
              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest opacity-60">Professional Card Comparison</p>
           </div>
 
@@ -88,7 +88,7 @@ export default function CardComparePage() {
                 <div className="size-16 md:size-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner shadow-slate-900/5">
                    <Plus className="size-8 text-slate-300" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic mb-4">No Cards Selected</h3>
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-wide mb-4">No Cards Selected</h3>
                 <p className="text-slate-500 font-bold text-sm mb-10 max-w-sm mx-auto">Browse our card catalog and add your favorites to compare.</p>
                 <Link to="/cards" className="inline-flex py-4 px-10 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:scale-105 transition-all">
                    Browse Cards

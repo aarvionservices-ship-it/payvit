@@ -207,7 +207,7 @@ export default function CreateLeadPage() {
           >
             <div className="flex items-center justify-between px-1">
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase italic leading-none">Bridge</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-wide leading-none">Bridge</h2>
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Lead Identity Control</p>
               </div>
               <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">

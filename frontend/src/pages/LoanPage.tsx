@@ -135,9 +135,12 @@ export default function LoanPage() {
       <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-16 min-h-[60vh]">
         <div className="flex items-center justify-between mb-12">
           <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none italic">
-              Available <span className="text-[#0055ff]">Capitals</span>
-            </h2>
+            <div className="inline-flex items-baseline gap-2 text-3xl uppercase  font-black">
+              <h2 className=" text-slate-900 tracking-wide  leading-none ">
+                Available
+              </h2>
+              <span className="text-[#0055ff] italic">Capitals</span>
+            </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">Marketplace Registry</p>
           </div>
           <div className="flex items-center gap-4 text-xs font-black text-slate-500 uppercase tracking-widest">

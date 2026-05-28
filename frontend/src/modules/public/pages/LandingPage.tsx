@@ -396,7 +396,7 @@ export default function LandingPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl -mr-16 -mt-16"></div>
             <div className="relative z-10">
               <div className="flex justify-between items-center mb-10">
-                <h3 className="text-2xl font-black">EMI Preview</h3>
+                <h3 className="text-2xl font-black tracking-wide">EMI Preview</h3>
                 <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg text-xs font-black uppercase">Personal Loan</span>
               </div>
               
@@ -495,7 +495,7 @@ export default function LandingPage() {
                 <p className="text-xs text-slate-400">Approved for $40k Home Loan</p>
               </div>
             </div>
-            <p className="text-lg italic text-slate-300 leading-relaxed">"The process was incredibly smooth. I compared 4 banks and found an interest rate 1.5% lower than my current bank. Savings were huge!"</p>
+            <p className="text-lg italic text-slate-300 leading-relaxed">"The whole process was surprisingly smooth. I compared offers from 4 different banks and ended up finding an interest rate that was 1.5% lower than what I had before. The savings really added up over time!"</p>
           </div>
         </div>
       </section>
