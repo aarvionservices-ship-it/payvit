@@ -103,7 +103,7 @@ export default function EmployeeLoginPage() {
                         <input
                             {...register('password')}
                             type="password"
-                            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                            placeholder="Enter your password"
                             className={`w-full mt-2 border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 transition-all ${
                                 errors.password ? 'border-red-500 focus:ring-red-500' : 'focus:ring-emerald-500'
                             }`}

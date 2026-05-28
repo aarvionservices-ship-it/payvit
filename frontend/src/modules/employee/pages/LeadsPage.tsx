@@ -99,7 +99,7 @@ export default function LeadsPage() {
               <Users className="size-6" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic leading-none">Pipeline</h1>
+              <h1 className="text-xl md:text-2xl font-black tracking-wide text-slate-900 dark:text-white uppercase not-italic leading-none">Pipeline</h1>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Assigned Channel</p>
             </div>
           </div>

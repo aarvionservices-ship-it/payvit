@@ -110,7 +110,7 @@ export default function MarketplaceOfferCard({
       {/* Top Section: Brand & Title */}
       <div className="flex items-start justify-between gap-3 md:gap-4 pr-10">
         <div className="flex items-center gap-3 md:gap-5 min-w-0">
-          <div className={`shrink-0 size-10 md:size-14 rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl tracking-tighter shadow-md ring-2 ring-white dark:ring-slate-800 text-center p-1 md:p-1.5 leading-tight overflow-hidden ${bankColor} italic`}>
+          <div className={`shrink-0 size-10 md:size-14 rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl tracking-tighter shadow-md ring-2 ring-white dark:ring-slate-800 text-center p-1 md:p-1.5 leading-tight overflow-hidden ${bankColor} `}>
             {bankName.charAt(0)}
           </div>
           <div className="min-w-0">
@@ -121,7 +121,7 @@ export default function MarketplaceOfferCard({
                  </span>
                </div>
              )}
-             <h3 className="text-base md:text-xl font-black text-slate-900 dark:text-white leading-tight tracking-tight break-words uppercase italic mb-1">{title}</h3>
+             <h3 className="text-base md:text-xl font-black text-slate-900 dark:text-white leading-tight tracking-wide break-words uppercase  mb-1">{title}</h3>
              <p className="text-[10px] md:text-sm text-slate-500 font-bold line-clamp-1 opacity-60">{description}</p>
           </div>
         </div>

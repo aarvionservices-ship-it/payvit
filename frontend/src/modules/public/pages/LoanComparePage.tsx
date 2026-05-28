@@ -79,7 +79,7 @@ export default function LoanComparePage() {
       <main className="pt-24 md:pt-32 pb-32">
         <div className="max-w-7xl mx-auto px-4">
           <div className="mb-10">
-             <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase italic">Compare <span className="text-primary italic">Loans</span></h1>
+             <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-wide">Compare <span className="text-primary italic">Loans</span></h1>
              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest opacity-60">Professional Comparison Matrix</p>
           </div>
 
@@ -88,7 +88,7 @@ export default function LoanComparePage() {
                 <div className="size-16 md:size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                    <Plus className="size-8 text-slate-300" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic mb-4">No Selection</h3>
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-wide mb-4">No Selection</h3>
                 <p className="text-slate-500 font-bold text-sm mb-10 max-w-sm mx-auto">Please add loans to compare from the marketplace.</p>
                 <Link to="/loans" className="inline-flex py-4 px-10 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:scale-105 transition-transform">
                    Browse Products

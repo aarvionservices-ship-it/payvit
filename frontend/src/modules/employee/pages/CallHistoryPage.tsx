@@ -108,7 +108,7 @@ export default function CallHistoryPage() {
       ) : filteredLogs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
            <PhoneCall className="size-16 text-slate-300" />
-           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest italic">No interactions found</p>
+           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest ">No interactions found</p>
         </div>
       ) : (
         <>
