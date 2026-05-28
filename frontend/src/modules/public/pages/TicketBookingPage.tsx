@@ -78,22 +78,22 @@ export default function TicketBookingPage() {
                <div className="grid grid-cols-2 gap-6">
                   <div className="p-8 bg-primary/10 border border-primary/20 rounded-[2.5rem]">
                      <Plane size={32} className="text-primary mb-4" />
-                     <h4 className="text-xl font-black italic uppercase italic">Fast</h4>
+                     <h4 className="text-xl font-black uppercase">Fast</h4>
                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Air Travel</p>
                   </div>
                   <div className="p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[2.5rem] -translate-y-8">
                      <Train size={32} className="text-emerald-500 mb-4" />
-                     <h4 className="text-xl font-black italic uppercase italic">Direct</h4>
+                     <h4 className="text-xl font-black uppercase">Direct</h4>
                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Railways</p>
                   </div>
                   <div className="p-8 bg-amber-500/10 border border-amber-500/20 rounded-[2.5rem]">
                      <Bus size={32} className="text-amber-500 mb-4" />
-                     <h4 className="text-xl font-black italic uppercase italic">Easy</h4>
+                     <h4 className="text-xl font-black uppercase">Easy</h4>
                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Roadways</p>
                   </div>
                   <div className="p-8 bg-rose-500/10 border border-rose-500/20 rounded-[2.5rem] -translate-y-8">
                      <MapPin size={32} className="text-rose-500 mb-4" />
-                     <h4 className="text-xl font-black italic uppercase italic">Local</h4>
+                     <h4 className="text-xl font-black uppercase">Local</h4>
                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Transit</p>
                   </div>
                </div>
@@ -106,7 +106,7 @@ export default function TicketBookingPage() {
       <section className="py-32 px-6 lg:px-20 max-w-7xl mx-auto">
         <div className="mb-20">
           <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-4">Discovery Center</h2>
-          <h3 className="text-4xl lg:text-7xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none">Where To <br />Next?</h3>
+          <h3 className="text-4xl lg:text-7xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Where To <br />Next?</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -123,7 +123,7 @@ export default function TicketBookingPage() {
                 <service.icon size={40} strokeWidth={2} />
               </div>
 
-              <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 uppercase italic tracking-tighter leading-none">
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 uppercase  tracking-tighter leading-none">
                 {service.name}
               </h3>
               <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6">
@@ -149,7 +149,7 @@ export default function TicketBookingPage() {
                  <ShieldCheck size={32} />
               </div>
               <div>
-                 <h5 className="text-xl font-black uppercase italic italic">Safe Bookings</h5>
+                 <h5 className="text-xl font-black uppercase">Safe Bookings</h5>
                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">100% Secure Payments</p>
               </div>
            </div>
@@ -158,7 +158,7 @@ export default function TicketBookingPage() {
                  <Rocket size={32} />
               </div>
               <div>
-                 <h5 className="text-xl font-black uppercase italic italic">Fast Cancellations</h5>
+                 <h5 className="text-xl font-black uppercase">Fast Cancellations</h5>
                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Instant Refunds</p>
               </div>
            </div>
@@ -167,7 +167,7 @@ export default function TicketBookingPage() {
                  <Smartphone size={32} />
               </div>
               <div>
-                 <h5 className="text-xl font-black uppercase italic italic">24/7 Support</h5>
+                 <h5 className="text-xl font-black uppercase">24/7 Support</h5>
                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Always here to help</p>
               </div>
            </div>

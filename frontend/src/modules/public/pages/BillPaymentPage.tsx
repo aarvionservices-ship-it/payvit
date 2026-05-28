@@ -66,9 +66,9 @@ export default function BillPaymentPage() {
               <Rocket size={14} className="animate-pulse" />
               India's #1 Utility Platform
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black italic tracking-tighter leading-[0.9] uppercase">
+            <h1 className="text-5xl lg:text-7xl font-black  tracking-tighter leading-[0.9] uppercase">
               Pay Bills <br />
-              <span className="text-primary italic underline decoration-[15px] decoration-primary/10">Ab Seconds Mein.</span>
+              <span className="text-primary  underline decoration-[15px] decoration-primary/10">Ab Seconds Mein.</span>
             </h1>
             <p className="text-slate-400 text-lg lg:text-xl font-medium max-w-xl leading-relaxed">
               Bharat ke sabse fast payments platform pe aapka swagat hai. Electricity se lekar Gas booking tak, sab kuch yahan hai.
@@ -87,8 +87,8 @@ export default function BillPaymentPage() {
                     <CreditCard size={32} />
                  </div>
                  <div>
-                    <h4 className="text-2xl font-black italic uppercase leading-none">Instant Bill</h4>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 italic italic">Secure Transactions</p>
+                    <h4 className="text-2xl font-black  uppercase leading-none">Instant Bill</h4>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 ">Secure Transactions</p>
                  </div>
               </div>
               <div className="space-y-6">

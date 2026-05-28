@@ -342,7 +342,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("currentPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Enter current password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                     {errors.currentPassword && <p className="text-[10px] font-bold text-rose-500 mt-1">{errors.currentPassword.message}</p>}
@@ -353,7 +353,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("newPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Enter new password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                     {errors.newPassword && <p className="text-[10px] font-bold text-rose-500 mt-1">{errors.newPassword.message}</p>}
@@ -364,7 +364,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("confirmPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Confirm new password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                     {errors.confirmPassword && <p className="text-[10px] font-bold text-rose-500 mt-1">{errors.confirmPassword.message}</p>}

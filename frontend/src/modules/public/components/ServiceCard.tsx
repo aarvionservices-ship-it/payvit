@@ -37,7 +37,7 @@ export default function ServiceCard({ icon, title, description, colorTheme, dela
           {icon}
         </span>
       </div>
-      <h3 className="text-lg md:text-xl font-black mb-2 text-slate-900 uppercase italic tracking-tight">{title}</h3>
+      <h3 className="text-lg md:text-xl font-black mb-2 text-slate-900 uppercase tracking-wide">{title}</h3>
       <p className="text-slate-500 text-xs md:text-sm mb-6 font-bold leading-relaxed">{description}</p>
       <Link className={`${theme.icon} font-black text-[10px] uppercase tracking-widest inline-flex items-center gap-1 group-hover:gap-2 transition-all mt-auto`} to={to}>
         Learn More <span className="material-symbols-outlined text-sm">arrow_forward</span>

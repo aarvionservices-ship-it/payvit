@@ -151,7 +151,7 @@ export default function ProfilePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black text-slate-900 uppercase italic">My Profile</h1>
+        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-wide">My Profile</h1>
         <AnimatePresence>
           {isDirty && (
             <motion.button 
@@ -231,7 +231,7 @@ export default function ProfilePage() {
                   <User className="size-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase italic leading-none">Identity</h2>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide leading-none">Identity</h2>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Personal Record Management</p>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("currentPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Enter your password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none"
                     />
                     {errors.currentPassword && <p className="text-[9px] font-black text-rose-500 mt-1 uppercase italic">{errors.currentPassword.message}</p>}
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("newPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Enter new password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none"
                     />
                     {errors.newPassword && <p className="text-[9px] font-black text-rose-500 mt-1 uppercase italic">{errors.newPassword.message}</p>}
@@ -327,7 +327,7 @@ export default function ProfilePage() {
                     <input 
                       type="password" 
                       {...register("confirmPassword")}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="Confirm new password"
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3.5 px-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none"
                     />
                     {errors.confirmPassword && <p className="text-[9px] font-black text-rose-500 mt-1 uppercase italic">{errors.confirmPassword.message}</p>}
