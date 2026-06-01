@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, User, Phone, Mail, Briefcase, Clock, Save, CheckCircle2, FileText, Share2, Loader2, AlertCircle, Upload, Plus, UserPlus, Landmark, ArrowUpRight, MessageSquare } from 'lucide-react';
 import { getLeadByIdRequest, updateLeadStatusRequest, requestDocumentRequest, addCommunicationLogRequest, getCommunicationLogsRequest } from '../../../api/lead.api';
@@ -199,65 +199,88 @@ export default function LeadDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Applied Product Section */}
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/20"></div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          {lead.leadType === 'cold_calling' ? (
+            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/20"></div>
               <div className="flex items-center gap-4">
-                <div className="size-14 md:size-16 bg-amber-500 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-amber-500/20 shrink-0">
-                   <Landmark className="size-6 md:size-8" />
+                <div className="size-14 md:size-16 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
+                   <Phone className="size-6 md:size-8" />
                 </div>
                 <div className="min-w-0">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">Primary Portfolio</p>
-                   <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">{lead.productName || 'Asset Unlinked'}</h2>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">Lead Origin</p>
+                   <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">Cold Calling Campaign</h2>
                    <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 border border-slate-100">
-                        <Landmark className="size-3" /> {lead.bankName || 'Partner'}
+                      <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-500 uppercase tracking-widest border border-slate-100">
+                        Spreadsheet Import
                       </div>
-                      <div className="bg-blue-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest border border-blue-100">
-                        {lead.appliedProduct?.category || lead.productType || 'Segment'}
+                      <div className="bg-indigo-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100">
+                        Cold Calling Lead
                       </div>
                    </div>
                 </div>
               </div>
-              {lead.productId && (
-                 <Link 
-                   to={`/loan/${lead.productId}`} 
-                   className="w-full sm:w-auto px-6 py-3.5 bg-slate-50 text-slate-900 border border-slate-200 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2"
-                 >
-                   Details <ArrowUpRight className="size-4" />
-                 </Link>
+            </div>
+          ) : (
+            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/20"></div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="size-14 md:size-16 bg-amber-500 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-amber-500/20 shrink-0">
+                     <Landmark className="size-6 md:size-8" />
+                  </div>
+                  <div className="min-w-0">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">Primary Portfolio</p>
+                     <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">{lead.productName || 'Asset Unlinked'}</h2>
+                     <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 border border-slate-100">
+                          <Landmark className="size-3" /> {lead.bankName || 'Partner'}
+                        </div>
+                        <div className="bg-blue-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest border border-blue-100">
+                          {lead.appliedProduct?.category || lead.productType || 'Segment'}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+                {lead.productId && (
+                   <Link 
+                     to={`/loan/${lead.productId}`} 
+                     className="w-full sm:w-auto px-6 py-3.5 bg-slate-50 text-slate-900 border border-slate-200 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2"
+                   >
+                     Details <ArrowUpRight className="size-4" />
+                   </Link>
+                )}
+              </div>
+
+              {lead.appliedProduct && (
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
+                    {lead.appliedProduct.interestRate && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Interest Rate</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.loanAmount && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Amount</p>
+                          <p className="font-black text-slate-900 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.tenure && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Tenure</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.processingFee && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Proc. Fee</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.processingFee}</p>
+                      </div>
+                    )}
+                 </div>
               )}
             </div>
-
-            {lead.appliedProduct && (
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
-                  {lead.appliedProduct.interestRate && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Interest Rate</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.loanAmount && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Amount</p>
-                        <p className="font-black text-slate-900 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.tenure && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Tenure</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.processingFee && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Proc. Fee</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.processingFee}</p>
-                    </div>
-                  )}
-               </div>
-            )}
-          </div>
+          )}
 
           {/* Customer Information */}
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden group">
@@ -413,10 +436,10 @@ export default function LeadDetailsPage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Asset Class</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">{lead.leadType === 'cold_calling' ? 'Classification' : 'Asset Class'}</label>
                 <input 
                   type="text" 
-                  value={lead.loanType}
+                  value={lead.loanType || "Cold Calling"}
                   readOnly
                   className="w-full bg-slate-50/50 border-none rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed opacity-60"
                 />
@@ -538,7 +561,7 @@ export default function LeadDetailsPage() {
                      </div>
                      <time className="text-[10px] font-bold text-slate-400">{new Date(log.createdAt).toLocaleString()}</time>
                   </div>
-                  <p className="text-sm text-slate-700 font-medium leading-relaxed bg-white/50 p-3 rounded-xl border border-white">
+                  <p className="whitespace-pre-line text-sm text-slate-700 font-medium leading-relaxed bg-white/50 p-3 rounded-xl border border-white">
                     {log.content}
                   </p>
                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
@@ -592,7 +615,7 @@ export default function LeadDetailsPage() {
                      <time className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(h.createdAt).toLocaleDateString()}</time>
                   </div>
                   {h.details?.note && (
-                    <p className="text-[10px] font-medium text-slate-500 leading-relaxed bg-slate-50/50 p-2 rounded-xl border border-slate-100/50 mt-2">
+                    <p className="whitespace-pre-line text-[10px] font-medium text-slate-500 leading-relaxed bg-slate-50/50 p-2 rounded-xl border border-slate-100/50 mt-2">
                        {h.details.note}
                     </p>
                   )}

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check } from 'lucide-react';
+import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { getLeadsRequest, bulkAssignLeadsRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest, uploadColdCallingLeadsRequest } from '../../../api/lead.api';
 import { getEmployeesRequest } from '../../../api/admin.api';
 import { toast } from 'react-hot-toast';
 import Pagination from '../../../components/Pagination';
@@ -20,7 +20,10 @@ const getStatusStyles = (status: string) => {
   }
 };
 
-const getCategoryIcon = (type: string) => {
+const getCategoryIcon = (type: string, leadType?: string) => {
+  if (leadType === 'cold_calling') {
+    return { icon: Phone, color: 'text-indigo-600', bg: 'bg-indigo-500/10' };
+  }
   switch (type?.toLowerCase()) {
     case 'personal': return { icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-500/10' };
     case 'business': return { icon: Briefcase, color: 'text-amber-600', bg: 'bg-amber-500/10' };
@@ -41,6 +44,11 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
   
+  const [activeTab, setActiveTab] = useState<'applied' | 'cold_calling'>('applied');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
@@ -66,8 +74,12 @@ export default function LeadsPage() {
   }, [employees]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
     fetchLeads();
-  }, [currentPage, debouncedSearch, filters.status, filters.assignment, filters.serviceType]);
+  }, [currentPage, debouncedSearch, filters.status, filters.assignment, filters.serviceType, activeTab]);
 
   useEffect(() => {
     fetchEmployees();
@@ -90,7 +102,8 @@ export default function LeadsPage() {
         limit,
         search: debouncedSearch || undefined,
         status: filters.status !== 'all' ? filters.status : undefined,
-        loanType: filters.serviceType !== 'all' ? filters.serviceType : undefined
+        loanType: filters.serviceType !== 'all' ? filters.serviceType : undefined,
+        leadType: activeTab === 'applied' ? 'customer_applied' : 'cold_calling'
       };
 
       if (filters.assignment === 'assigned') params.assignedEmployee = { $ne: null };
@@ -143,6 +156,57 @@ export default function LeadsPage() {
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64Data = (reader.result as string).split(',')[1];
+          const res = await uploadColdCallingLeadsRequest(file.name, base64Data);
+          if (res.success) {
+            toast.success(res.message || "Cold calling leads synchronized successfully!");
+            setShowUploadModal(false);
+            setFile(null);
+            fetchLeads();
+            
+            // Periodically refresh the data over the next few seconds to display leads as they finish importing
+            const intervals = [1000, 3000, 6000];
+            intervals.forEach(delay => {
+              setTimeout(() => {
+                fetchLeads();
+              }, delay);
+            });
+          } else {
+            toast.error(res.message || "Upload failed");
+          }
+        } catch (err: any) {
+          toast.error(err.message || "Failed to process server response");
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read file");
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error(err.message || "Spreadsheet upload failed");
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 lg:space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -150,6 +214,36 @@ export default function LeadsPage() {
           <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">Leads Acquisition</h1>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.4em] mt-1">Real-time Lead Intelligence</p>
         </div>
+        {activeTab === 'cold_calling' && (
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-all rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 cursor-pointer"
+          >
+            <Upload className="size-4" /> Upload Leads List
+          </button>
+        )}
+      </div>
+
+      {/* Tabs Selector */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+        <button
+          onClick={() => setActiveTab('applied')}
+          className={`pb-4 text-xs font-black uppercase tracking-[0.15em] relative transition-all cursor-pointer ${activeTab === 'applied' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Customer Applied
+          {activeTab === 'applied' && (
+            <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('cold_calling')}
+          className={`pb-4 text-xs font-black uppercase tracking-[0.15em] relative transition-all cursor-pointer ${activeTab === 'cold_calling' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Cold Calling List
+          {activeTab === 'cold_calling' && (
+            <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+          )}
+        </button>
       </div>
 
       {/* Selection Control Bar */}
@@ -303,7 +397,7 @@ export default function LeadsPage() {
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
             <AnimatePresence mode="popLayout">
               {leads.map((lead) => {
-                const category = getCategoryIcon(lead.loanType);
+                const category = getCategoryIcon(lead.loanType, lead.leadType);
                 const assignedEmp = employeesMap[lead.assignedEmployee];
                 
                 return (
@@ -365,7 +459,7 @@ export default function LeadsPage() {
                        </div>
                        <div className="flex items-center justify-between text-[11px] font-bold">
                           <span className="text-slate-400 uppercase tracking-tighter flex items-center gap-2"><TrendingUp className="size-4" /> Classification</span>
-                          <span className="text-primary font-black uppercase tracking-[0.1em]">{lead.loanType}</span>
+                          <span className="text-primary font-black uppercase tracking-[0.1em]">{lead.loanType || "Cold Calling"}</span>
                        </div>
                     </div>
                     
@@ -405,7 +499,7 @@ export default function LeadsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {leads.map((lead) => {
-                  const category = getCategoryIcon(lead.loanType);
+                  const category = getCategoryIcon(lead.loanType, lead.leadType);
                   
                   return (
                     <tr 
@@ -430,7 +524,7 @@ export default function LeadsPage() {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">{lead.loanType}</span>
+                        <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">{lead.loanType || "Cold Calling"}</span>
                       </td>
                       <td className="px-8 py-6">
                         {lead.assignedEmployee ? (
@@ -540,6 +634,80 @@ export default function LeadsPage() {
                     <Loader2 className="size-10 animate-spin text-primary" />
                   </div>
                )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Spreadsheet Upload Modal */}
+      <AnimatePresence>
+        {showUploadModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!uploading) setShowUploadModal(false); }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-8"
+            >
+               <div className="pb-4">
+                  <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
+                    <Upload className="size-7" />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">Upload Cold Calling List</h2>
+                  <p className="text-sm font-bold text-slate-500 mt-2">
+                    Import lists of leads (CSV, XLS, XLSX) for cold calling campaigns. Columns are mapped automatically.
+                  </p>
+               </div>
+
+               <form onSubmit={handleUploadSubmit} className="space-y-6">
+                 <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-all relative">
+                   <input 
+                     type="file" 
+                     accept=".csv, .xls, .xlsx" 
+                     onChange={handleFileChange}
+                     disabled={uploading}
+                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                   />
+                   <Upload className="size-8 text-slate-400 mb-4" />
+                   <p className="text-sm font-black text-slate-700 dark:text-slate-300">
+                     {file ? file.name : "Drag and drop or click to choose file"}
+                   </p>
+                   <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-2">
+                     Supports CSV, XLS, XLSX (Max 10MB)
+                   </p>
+                 </div>
+
+                 <div className="flex gap-4">
+                   <button 
+                     type="button"
+                     disabled={uploading}
+                     onClick={() => setShowUploadModal(false)}
+                     className="flex-1 py-4 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     type="submit"
+                     disabled={uploading || !file}
+                     className="flex-1 py-4 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                   >
+                     {uploading ? (
+                       <>
+                         <Loader2 className="size-4 animate-spin" /> Synchronizing...
+                       </>
+                     ) : (
+                       "Initialize Import"
+                     )}
+                   </button>
+                 </div>
+               </form>
             </motion.div>
           </div>
         )}

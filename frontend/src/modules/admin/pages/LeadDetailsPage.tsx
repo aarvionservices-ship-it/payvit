@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, User, Phone, Mail, Briefcase, Calendar, Clock, FileText, Share2, Loader2, AlertCircle, Landmark, ArrowUpRight } from 'lucide-react';
 import { getLeadByIdRequest } from '../../../api/lead.api';
@@ -98,65 +98,88 @@ export default function LeadDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Applied Product Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {lead.leadType === 'cold_calling' ? (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
               <div className="flex items-center gap-4">
-                <div className="size-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600 border border-amber-200/20">
-                   <Landmark className="size-6" />
+                <div className="size-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-200/20">
+                   <Phone className="size-6" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Applied For</p>
-                   <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none">{lead.productName || 'Personal Loan Application'}</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Lead Origin</p>
+                   <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none">Cold Calling Campaign</h2>
                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      <div className="bg-slate-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-tight flex items-center gap-1.5 border border-slate-200/50">
-                        <Landmark className="size-3" /> {lead.bankName || 'PayVit Partner'}
+                      <div className="bg-slate-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-tight border border-slate-200/50">
+                        Spreadsheet Import
                       </div>
-                      <div className="bg-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-tight border border-blue-200/50">
-                        {lead.appliedProduct?.category || lead.productType || 'loan'}
+                      <div className="bg-indigo-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-indigo-600 uppercase tracking-tight border border-indigo-200/50">
+                        Cold Calling Lead
                       </div>
                    </div>
                 </div>
               </div>
-              {lead.productId && (
-                 <Link 
-                   to={`/admin/offers/${lead.productId}`} // Or wherever admin offer view is
-                   className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-900/10"
-                 >
-                   Offer Config <ArrowUpRight className="size-3.5" />
-                 </Link>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600 border border-amber-200/20">
+                     <Landmark className="size-6" />
+                  </div>
+                  <div>
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Applied For</p>
+                     <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none">{lead.productName || 'Personal Loan Application'}</h2>
+                     <div className="flex flex-wrap items-center gap-3 mt-2">
+                        <div className="bg-slate-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-tight flex items-center gap-1.5 border border-slate-200/50">
+                          <Landmark className="size-3" /> {lead.bankName || 'PayVit Partner'}
+                        </div>
+                        <div className="bg-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-tight border border-blue-200/50">
+                          {lead.appliedProduct?.category || lead.productType || 'loan'}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+                {lead.productId && (
+                   <Link 
+                     to={`/admin/offers/${lead.productId}`} // Or wherever admin offer view is
+                     className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-900/10"
+                   >
+                     Offer Config <ArrowUpRight className="size-3.5" />
+                   </Link>
+                )}
+              </div>
+
+              {lead.appliedProduct && (
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
+                    {lead.appliedProduct.interestRate && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Interest Rate</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.loanAmount && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Amount</p>
+                          <p className="font-black text-slate-900 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.tenure && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Tenure</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
+                      </div>
+                    )}
+                    {lead.appliedProduct.processingFee && (
+                      <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Proc. Fee</p>
+                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.processingFee}</p>
+                      </div>
+                    )}
+                 </div>
               )}
             </div>
-
-            {lead.appliedProduct && (
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
-                  {lead.appliedProduct.interestRate && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Interest Rate</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.loanAmount && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Amount</p>
-                        <p className="font-black text-slate-900 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.tenure && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Tenure</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
-                    </div>
-                  )}
-                  {lead.appliedProduct.processingFee && (
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Proc. Fee</p>
-                        <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.processingFee}</p>
-                    </div>
-                  )}
-               </div>
-            )}
-          </div>
+          )}
 
           {/* Customer Information */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
@@ -212,8 +235,8 @@ export default function LeadDetailsPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Loan Type</label>
-                <p className="font-bold text-slate-700 capitalize p-3 bg-slate-50 rounded-xl border border-slate-100">{lead.loanType}</p>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{lead.leadType === 'cold_calling' ? 'Classification' : 'Loan Type'}</label>
+                <p className="font-bold text-slate-700 capitalize p-3 bg-slate-50 rounded-xl border border-slate-100">{lead.loanType || "Cold Calling"}</p>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Assigned To</label>
@@ -272,7 +295,7 @@ export default function LeadDetailsPage() {
                            {new Date(h.createdAt).toLocaleDateString()}
                          </time>
                        </div>
-                       {h.details?.note && <div className="text-sm text-slate-500 leading-relaxed italic border-l-2 border-slate-100 pl-3 py-1 mb-2">"{h.details.note}"</div>}
+                       {h.details?.note && <div className="whitespace-pre-line text-sm text-slate-500 leading-relaxed italic border-l-2 border-slate-100 pl-3 py-1 mb-2">{h.details.note}</div>}
                        <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-2 border-t border-slate-50">
                          {h.role} &bull; {h.performedBy?.slice(-8)}
                        </div>

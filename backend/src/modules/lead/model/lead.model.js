@@ -27,7 +27,14 @@ const leadSchema = new mongoose.Schema({
 
     source: {
         type: String,
-        enum: ["affiliate", "direct", "ad", "employee_referral"]
+        enum: ["affiliate", "direct", "ad", "employee_referral", "csv_upload"]
+    },
+
+    leadType: {
+        type: String,
+        enum: ["customer_applied", "cold_calling"],
+        default: "customer_applied",
+        index: true
     },
 
     productId: String,

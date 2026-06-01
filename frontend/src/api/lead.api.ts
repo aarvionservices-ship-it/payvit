@@ -68,4 +68,10 @@ export async function getEmployeeCommunicationLogsRequest() {
     return res.data;
 }
 
+export async function uploadColdCallingLeadsRequest(fileName: string, base64Data: string) {
+    const payload = encryptPayload({ fileName, fileData: base64Data });
+    const res = await api.post("/leads/upload-cold-calling", payload);
+    return res.data;
+}
+
 
