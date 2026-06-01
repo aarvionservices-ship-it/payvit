@@ -1,7 +1,8 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mongoose = require('mongoose');
 const Loan = require('../src/modules/loan/model/loan.model');
-const loansData = require('../data/mockLoan');
+const loansData = require('../data/fintech.loans.json');
 
 // Connect to Database
 const connectDB = async () => {
@@ -17,7 +18,7 @@ const connectDB = async () => {
 const importData = async () => {
     try {
         if (!loansData || !Array.isArray(loansData)) {
-            throw new Error('Could not find loans array in data/mockLoan.js');
+            throw new Error('Could not find loans array in data/fintech.loans.json');
         }
 
         // Add default gradients and imageUrls if needed
@@ -34,6 +35,15 @@ const importData = async () => {
         };
 
         const loansToImport = loansData.map(loan => {
+            if (loan._id && loan._id.$oid) {
+                loan._id = loan._id.$oid;
+            }
+            if (loan.createdAt && loan.createdAt.$date) {
+                loan.createdAt = new Date(loan.createdAt.$date);
+            }
+            if (loan.updatedAt && loan.updatedAt.$date) {
+                loan.updatedAt = new Date(loan.updatedAt.$date);
+            }
             if (!loan.gradient) {
                 loan.gradient = providerGradients[loan.provider] || 'from-slate-500 to-slate-700';
             }

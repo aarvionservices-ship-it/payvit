@@ -69,6 +69,13 @@ router.post(
 );
 
 router.post(
+    "/upload-cold-calling",
+    auth,
+    roles(["admin"]),
+    leadController.bulkCreateLeads
+);
+
+router.post(
     "/:id/request-document",
     auth,
     roles(["employee", "admin"]),

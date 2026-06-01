@@ -7,7 +7,8 @@
     "dev": "nodemon ./src/server.js",
     "keys:generate": "node ./scripts/generateKeys.js",
     "data:import": "node ./seeders/seedCards.js",
-    "data:destroy": "node ./seeders/seedCards.js -d"
+    "data:destroy": "node ./seeders/seedCards.js -d",
+    "db:seed": "node ./seeders/seedMaster.js"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",
+    "xlsx": "^0.18.5",
     "xss": "^1.0.15"
   },
   "devDependencies": {
@@ -43,4 +45,3 @@
     "prettier": "^3.8.1"
   }
 }
-
