@@ -135,8 +135,8 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
-          <div className="relative">
-            <div className="relative flex justify-center">
+          <div className="ml-10 relative flex justify-center items-center">
+            <div className="relative w-fit">
               {/* Main Hero Image */}
               <div className="relative group">
                 <img
