@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { getLeadsRequest, bulkAssignLeadsRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest, getCustLeadsRequest } from '../../../api/lead.api';
 import { getEmployeesRequest } from '../../../api/admin.api';
 import { toast } from 'react-hot-toast';
 import Pagination from '../../../components/Pagination';
@@ -32,6 +32,8 @@ const getCategoryIcon = (type: string) => {
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([]);
+  const [custLeads, setCustLeads] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"leads" | "custLeads">("leads");
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
@@ -40,6 +42,11 @@ export default function LeadsPage() {
   const [totalLeads, setTotalLeads] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
+
+  const displayedData =
+    activeTab === "leads"
+      ? leads
+      : custLeads;
   
   const [filters, setFilters] = useState({
     search: "",
@@ -66,7 +73,21 @@ export default function LeadsPage() {
   }, [employees]);
 
   useEffect(() => {
+    const savedLeads = localStorage.getItem("leads");
+    const savedCustLeads = localStorage.getItem("custLeads");
+
+    if (savedLeads) {
+      setLeads(JSON.parse(savedLeads));
+    }
+
+    if (savedCustLeads) {
+      setCustLeads(JSON.parse(savedCustLeads));
+    }
+  }, []);
+
+  useEffect(() => {
     fetchLeads();
+    fetchCustLeads();
   }, [currentPage, debouncedSearch, filters.status, filters.assignment, filters.serviceType]);
 
   useEffect(() => {
@@ -83,6 +104,7 @@ export default function LeadsPage() {
   };
 
   const fetchLeads = async () => {
+    
     try {
       setLoading(true);
       const params: any = {
@@ -99,7 +121,14 @@ export default function LeadsPage() {
       const res = await getLeadsRequest(params);
       
       if (res.success) {
-        setLeads(res.data?.data || []);
+        const data = res.data?.data || [];
+        setLeads(data);
+
+        localStorage.setItem(
+          "leads",
+          JSON.stringify(data)
+        );
+
         setTotalLeads(res.data?.total || 0);
       }
     } catch (error) {
@@ -110,6 +139,42 @@ export default function LeadsPage() {
   };
 
   const fetchData = fetchLeads; // Alias for backward compatibility if needed
+
+  const fetchCustLeads = async () => {
+    console.log("fetchCustLeads called");
+    try {
+      setLoading(true);
+      const params: any = {
+        page: currentPage,
+        limit,
+        search: debouncedSearch || undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        loanType: filters.serviceType !== 'all' ? filters.serviceType : undefined
+      };
+
+      if (filters.assignment === 'assigned') params.assignedEmployee = { $ne: null };
+      if (filters.assignment === 'unassigned') params.assignedEmployee = null;
+
+      const data = await getCustLeadsRequest(params);
+      console.log("Fetched Cust Leads:", data);
+
+      setCustLeads(data || []);
+
+      localStorage.setItem(
+        "custLeads",
+        JSON.stringify(data || [])
+      );
+
+
+      setTotalLeads(data?.length || 0);
+    } catch (error) {
+      toast.error("Failed to sync lead intelligence");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustData = fetchCustLeads;
 
   const handleBulkAssign = async (employeeId: string) => {
     try {
@@ -122,6 +187,7 @@ export default function LeadsPage() {
         setSelectedLeads([]);
         setShowAssignModal(null);
         fetchData();
+        // fetchCustData();
       }
     } catch (error) {
       toast.error("Encryption handshake failed during assignment");
@@ -131,10 +197,10 @@ export default function LeadsPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedLeads.length === leads.length) {
+    if (selectedLeads.length === displayedData.length) {
       setSelectedLeads([]);
     } else {
-      setSelectedLeads(leads.map(l => l.leadId));
+      setSelectedLeads(displayedData.map(l => l.leadId));
     }
   };
 
@@ -147,8 +213,30 @@ export default function LeadsPage() {
     <div className="space-y-6 lg:space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">Leads Acquisition</h1>
+          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Leads</h1>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.4em] mt-1">Real-time Lead Intelligence</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-4 border-b-2 border-b-slate-200/80">
+        <div
+          onClick={() => setActiveTab("leads")}
+          className={`px-4 py-2 font-bold pb-3 uppercase ${activeTab === "leads"
+            ? "border-b-4 border-b-primary text-primary"
+            : "text-slate-500"
+            }`}
+        >
+          Customer Applied
+        </div>
+
+        <div
+          onClick={() => setActiveTab("custLeads")}
+          className={`px-4 py-2 font-bold pb-3 uppercase ${activeTab === "custLeads"
+            ? "border-b-4 border-b-primary text-primary"
+            : "text-slate-500"
+            }`}
+        >
+          Cold Calling List
         </div>
       </div>
 
@@ -302,7 +390,7 @@ export default function LeadsPage() {
           {/* Leads Cards Grid - Mobile */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
             <AnimatePresence mode="popLayout">
-              {leads.map((lead) => {
+              {displayedData.map((lead) => {
                 const category = getCategoryIcon(lead.loanType);
                 const assignedEmp = employeesMap[lead.assignedEmployee];
                 
@@ -384,6 +472,7 @@ export default function LeadsPage() {
             </AnimatePresence>
           </div>
 
+      
           <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -404,7 +493,7 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {leads.map((lead) => {
+                {displayedData.map((lead) => {
                   const category = getCategoryIcon(lead.loanType);
                   
                   return (
