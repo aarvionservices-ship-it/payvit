@@ -12,6 +12,79 @@ export async function getLeadsRequest(params?: any) {
     return res.data;
 }
 
+export async function getCustLeadsRequest(params?: any) {
+    // const res = await api.get("/leads", { params });
+    const testData = [
+        {
+            "customerName": "John Smith",
+            "phone": "+1-555-123-4567",
+            "email": "john.smith@example.com",
+            "city": "New York",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Sarah Johnson",
+            "status": "Active",
+            "loanType": "personal",
+            "leadId": "100"
+        },
+        {
+            "customerName": "Emma Davis",
+            "phone": "+1-555-987-6543",
+            "email": "emma.davis@example.com",
+            "city": "Los Angeles",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Michael Chen",
+            "status": "Pending",
+            "loanType": "personal",
+            "leadId": "101"
+        },
+        {
+            "customerName": "John Smith",
+            "phone": "+1-555-123-4567",
+            "email": "john.smith@example.com",
+            "city": "New York",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Sarah Johnson",
+            "status": "Active",
+            "loanType": "personal",
+            "leadId": "102"
+        },
+        {
+            "customerName": "Emma Davis",
+            "phone": "+1-555-987-6543",
+            "email": "emma.davis@example.com",
+            "city": "Los Angeles",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Michael Chen",
+            "status": "Pending",
+            "loanType": "personal",
+            "leadId": "103"
+        },
+        {
+            "customerName": "John Smith",
+            "phone": "+1-555-123-4567",
+            "email": "john.smith@example.com",
+            "city": "New York",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Sarah Johnson",
+            "status": "Active",
+            "loanType": "personal",
+            "leadId": "104"
+        },
+        {
+            "customerName": "Emma Davis",
+            "phone": "+1-555-987-6543",
+            "email": "emma.davis@example.com",
+            "city": "Los Angeles",
+            "uploadDate": "2024-06-01",
+            "assignedEmployee": "Michael Chen",
+            "status": "Pending",
+            "loanType": "personal",
+            "leadId": "105"
+        }
+      ]
+    return testData;
+}
+
 export async function getLeadByIdRequest(id: string) {
     const res = await api.get(`/leads/${id}`);
     return res.data;
