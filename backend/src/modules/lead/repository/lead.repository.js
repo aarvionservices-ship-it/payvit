@@ -92,6 +92,10 @@ class LeadRepository {
         );
     }
 
+    async findByPhoneAndType(phone, leadType) {
+        return Lead.findOne({ phone, leadType }).lean();
+    }
+
 }
 
 module.exports = new LeadRepository();

@@ -31,6 +31,7 @@ class LeadService {
             productType: data.productType,
 
             source: data.source || "direct",
+            leadType: data.leadType || "customer_applied",
             documents: data.documents || [],
             assignedEmployee: data.assignedEmployee || null,
             status: data.assignedEmployee ? "assigned" : "new"
@@ -112,7 +113,23 @@ class LeadService {
 
         const { skip, limit, page } = pagination(query);
 
-        const filter = { ...filtering(query), ...securityFilter };
+        const baseFilter = filtering(query);
+
+        if (baseFilter.leadType === "cold_calling") {
+            baseFilter.leadType = "cold_calling";
+        } else if (baseFilter.leadType === "customer_applied") {
+            baseFilter.leadType = { $ne: "cold_calling" };
+        } else {
+            // If leadType is not specified:
+            // - If filtering for an employee (assigned leads), return ALL types (applied & cold-calling)
+            // - Otherwise (e.g. general admin list), default to customer-applied leads
+            const hasEmployeeFilter = securityFilter.assignedEmployee || baseFilter.assignedEmployee;
+            if (!hasEmployeeFilter) {
+                baseFilter.leadType = { $ne: "cold_calling" };
+            }
+        }
+
+        const filter = { ...baseFilter, ...securityFilter };
 
         const sort = sorting(query);
 
@@ -222,6 +239,74 @@ class LeadService {
         const lead = await leadRepo.updateInitialDocument(leadId, documentType, url, name);
         eventBus.emit("lead.initial.document.updated", { leadId, documentType, customerId, role: "customer" });
         return lead;
+    }
+
+    async bulkCreateLeads(leadsData, performerId = "SYSTEM") {
+        const createdLeads = [];
+        const seenPhones = new Set();
+        
+        for (const data of leadsData) {
+            if (!data.phone) continue;
+            
+            // Deduplicate within the same spreadsheet upload batch
+            if (seenPhones.has(data.phone)) {
+                console.log(`Skipping duplicate phone in the same upload batch: ${data.phone}`);
+                continue;
+            }
+            seenPhones.add(data.phone);
+            
+            // Check if a cold calling lead with the same phone already exists in the database
+            const existingLead = await leadRepo.findByPhoneAndType(data.phone, "cold_calling");
+            if (existingLead) {
+                console.log(`Skipping existing cold calling lead for phone: ${data.phone}`);
+                continue;
+            }
+            
+            const leadId = snowflake.nextId();
+            
+            const lead = await leadRepo.createLead({
+                leadId,
+                customerId: null,
+                customerName: data.customerName,
+                phone: data.phone,
+                email: data.email || null,
+                loanType: data.loanType || null,
+                productId: null,
+                productType: null,
+                source: "csv_upload",
+                leadType: "cold_calling",
+                status: data.assignedEmployee ? "assigned" : "new",
+                assignedEmployee: data.assignedEmployee || null
+            });
+            
+            if (data.note || data.interactionDetails || data.logDetails) {
+                const noteText = data.note || data.interactionDetails || data.logDetails;
+                
+                // Add note
+                await leadRepo.addNote({
+                    leadId,
+                    note: noteText,
+                    employeeId: performerId,
+                    callOutcome: "interested"
+                });
+                
+                // Create communication log
+                const communicationLogService = require("./communicationLog.service");
+                await communicationLogService.createLog({
+                    leadId,
+                    employeeId: performerId,
+                    type: "remark",
+                    outcome: "interested",
+                    content: noteText,
+                    timestamp: new Date()
+                });
+            }
+            
+            eventBus.emit("lead.created", lead);
+            createdLeads.push(lead);
+        }
+        
+        return createdLeads;
     }
 
 }

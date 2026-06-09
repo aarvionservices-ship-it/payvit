@@ -19,8 +19,14 @@ module.exports = Joi.object({
         "affiliate",
         "direct",
         "ad",
-        "employee_referral"
+        "employee_referral",
+        "csv_upload"
     ),
+
+    leadType: Joi.string().valid(
+        "customer_applied",
+        "cold_calling"
+    ).optional(),
 
     customerId: Joi.string().optional(),
     assignedEmployee: Joi.string().optional(),

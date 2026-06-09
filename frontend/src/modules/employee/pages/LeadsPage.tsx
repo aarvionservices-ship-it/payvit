@@ -19,7 +19,10 @@ const getStatusStyles = (type: string) => {
   }
 };
 
-const getLeadIconStyles = (type: string) => {
+const getLeadIconStyles = (type: string, leadType?: string) => {
+  if (leadType === 'cold_calling') {
+    return { icon: Phone, color: 'text-indigo-600', gradient: 'from-indigo-500/10 to-purple-500/10' };
+  }
   switch (type?.toLowerCase()) {
     case 'personal':
     case 'personal loan':
@@ -222,7 +225,7 @@ export default function LeadsPage() {
           <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 px-1">
             <AnimatePresence>
               {filteredLeads.map((lead, i) => {
-                const style = getLeadIconStyles(lead.loanType);
+                const style = getLeadIconStyles(lead.loanType, lead.leadType);
                 const Icon = style.icon;
                 
                 return (
@@ -298,7 +301,7 @@ export default function LeadsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredLeads.map((lead) => {
-                  const style = getLeadIconStyles(lead.loanType);
+                  const style = getLeadIconStyles(lead.loanType, lead.leadType);
                   const Icon = style.icon;
                   
                   return (
