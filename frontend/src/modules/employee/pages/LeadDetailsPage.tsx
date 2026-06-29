@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, User, Phone, Mail, Briefcase, Clock, Save, CheckCircle2, FileText, Share2, Loader2, AlertCircle, Upload, Plus, UserPlus, Landmark, ArrowUpRight, MessageSquare } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Briefcase, Clock, Save, CheckCircle2, FileText, Share2, Loader2, AlertCircle, Upload, Plus, UserPlus, Landmark, ArrowUpRight, MessageSquare, Copy, X, Lock } from 'lucide-react';
 import { getLeadByIdRequest, updateLeadStatusRequest, requestDocumentRequest, addCommunicationLogRequest, getCommunicationLogsRequest } from '../../../api/lead.api';
 import { getLeadHistoryRequest } from '../../../api/leadHistory.api';
+import { createCustomerRequest } from '../../../api/user.api';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function LeadDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +26,95 @@ export default function LeadDetailsPage() {
   const [logOutcome, setLogOutcome] = useState('interested');
   const [logContent, setLogContent] = useState('');
   const [logging, setLogging] = useState(false);
+
+  // Quick Add Registration state
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registerData, setRegisterData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    password: ''
+  });
+  const [registeringUser, setRegisteringUser] = useState(false);
+
+  // Registration success credentials state
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState({
+    email: '',
+    password: ''
+  });
+
+  const generatePassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$";
+    let pass = "";
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass + "1A"; // ensure it meets basic validation
+  };
+
+  const handleOpenRegisterModal = () => {
+    setRegisterData({
+      name: lead?.customerName || '',
+      phone: lead?.phone || '',
+      email: lead?.email || '',
+      password: generatePassword()
+    });
+    setShowRegisterModal(true);
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registerData.name || !registerData.phone || !registerData.email || !registerData.password) {
+      toast.error("Please fill in all registration fields");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email)) {
+      toast.error("Invalid email address format");
+      return;
+    }
+    if (!/^\d{10}$/.test(registerData.phone)) {
+      toast.error("Phone number must be exactly 10 digits and contain only numbers");
+      return;
+    }
+    try {
+      setRegisteringUser(true);
+      const res = await createCustomerRequest(registerData);
+      if (res.success) {
+        toast.success("User profile created successfully!");
+        setCreatedCredentials({
+          email: registerData.email,
+          password: registerData.password
+        });
+        
+        try {
+          await updateLeadStatusRequest(id!, {
+            status: lead.status || 'new',
+            customerId: res.data.userId
+          });
+        } catch (linkErr) {
+          console.error("Failed to link customer to lead:", linkErr);
+        }
+
+        setShowRegisterModal(false);
+        setShowCredentialsModal(true);
+        // Refresh the lead details to reflect updated connection
+        await fetchLead();
+      } else {
+        toast.error(res.message || "Failed to register user");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || "Registration failed");
+    } finally {
+      setRegisteringUser(false);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    const textToCopy = `Username: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`;
+    navigator.clipboard.writeText(textToCopy);
+    toast.success("Credentials copied to clipboard!");
+  };
   
   const fetchLead = async () => {
     if (!id) return;
@@ -164,17 +255,28 @@ export default function LeadDetailsPage() {
      );
   }
 
+  const isColdCalling = lead?.leadType?.toLowerCase().trim() === 'cold_calling';
+  const isNotRegistered = !lead?.customerId || lead?.customerId === 'null' || lead?.customerId === '';
+
+  console.log("Lead Details Debug:", {
+    leadId: lead?.leadId,
+    leadType: lead?.leadType,
+    customerId: lead?.customerId,
+    isColdCalling,
+    isNotRegistered
+  });
+
   return (
     <main className="px-3 md:px-6 py-6 max-w-7xl mx-auto space-y-4 md:space-y-6 bg-slate-50/50 min-h-screen pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 md:p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
         <div className="flex items-center gap-4 relative z-10">
-          <Link to="/employee/leads" className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-emerald-600 transition-all shadow-sm group">
-            <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
+          <Link to="/employee/leads" className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all shadow-sm group">
+            <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
           </Link>
           <div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 uppercase italic leading-none">Terminal</h1>
-            <p className="text-slate-500 font-bold text-[9px] uppercase tracking-[0.2em] mt-1">Lead Analysis & Control</p>
+            <h1 className="text-xl font-bold tracking-tight text-slate-955 dark:text-white leading-none">Lead Details</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Operational view and timeline logs</p>
           </div>
         </div>
         <div className="flex gap-2 relative z-10">
@@ -182,14 +284,14 @@ export default function LeadDetailsPage() {
             <button 
               onClick={() => handleUpdate(undefined, 'converted')}
               disabled={updating || status === 'converted'}
-              className="flex-1 md:flex-none px-6 py-3.5 text-[10px] font-black text-white bg-slate-900 rounded-2xl transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2 uppercase tracking-widest disabled:opacity-50"
+              className="flex-1 md:flex-none px-4 py-2 text-xs font-semibold text-white bg-slate-950 hover:bg-slate-900 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {updating ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
               {status === 'converted' ? 'Converted' : 'Convert'}
             </button>
           )}
           {status === 'rejected' && (
-             <span className="px-5 py-3 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-2 uppercase tracking-widest">
+             <span className="px-4 py-2 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-1.5 uppercase">
                <AlertCircle className="size-4" /> Rejected
              </span>
           )}
@@ -200,20 +302,20 @@ export default function LeadDetailsPage() {
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Applied Product Section */}
           {lead.leadType === 'cold_calling' ? (
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/20"></div>
               <div className="flex items-center gap-4">
-                <div className="size-14 md:size-16 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 shrink-0">
-                   <Phone className="size-6 md:size-8" />
+                <div className="size-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                   <Phone className="size-6" />
                 </div>
                 <div className="min-w-0">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">Lead Origin</p>
-                   <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">Cold Calling Campaign</h2>
-                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-500 uppercase tracking-widest border border-slate-100">
+                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase leading-none mb-1.5">Lead Origin</p>
+                   <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">Cold Calling Campaign</h2>
+                   <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <div className="bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-500 uppercase tracking-wider border border-slate-100/50 dark:border-slate-700/50">
                         Spreadsheet Import
                       </div>
-                      <div className="bg-indigo-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest border border-indigo-100">
+                      <div className="bg-indigo-50 dark:bg-indigo-500/20 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider border border-indigo-100/50 dark:border-indigo-500/20">
                         Cold Calling Lead
                       </div>
                    </div>
@@ -221,21 +323,21 @@ export default function LeadDetailsPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/20"></div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="size-14 md:size-16 bg-amber-500 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-amber-500/20 shrink-0">
-                     <Landmark className="size-6 md:size-8" />
+                  <div className="size-12 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+                     <Landmark className="size-6" />
                   </div>
                   <div className="min-w-0">
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">Primary Portfolio</p>
-                     <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">{lead.productName || 'Asset Unlinked'}</h2>
-                     <div className="flex flex-wrap items-center gap-2 mt-3">
-                        <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 border border-slate-100">
+                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase leading-none mb-1.5">Primary Portfolio</p>
+                     <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">{lead.productName || 'Asset Unlinked'}</h2>
+                     <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <div className="bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1 border border-slate-100/50 dark:border-slate-700/50">
                           <Landmark className="size-3" /> {lead.bankName || 'Partner'}
                         </div>
-                        <div className="bg-blue-50 px-3 py-1.5 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest border border-blue-100">
+                        <div className="bg-blue-50 dark:bg-blue-500/20 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider border border-blue-100/50 dark:border-blue-500/20">
                           {lead.appliedProduct?.category || lead.productType || 'Segment'}
                         </div>
                      </div>
@@ -244,7 +346,7 @@ export default function LeadDetailsPage() {
                 {lead.productId && (
                    <Link 
                      to={`/loan/${lead.productId}`} 
-                     className="w-full sm:w-auto px-6 py-3.5 bg-slate-50 text-slate-900 border border-slate-200 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2"
+                     className="w-full sm:w-auto px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-1.5"
                    >
                      Details <ArrowUpRight className="size-4" />
                    </Link>
@@ -253,103 +355,113 @@ export default function LeadDetailsPage() {
 
               {lead.appliedProduct && (
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
-                    {lead.appliedProduct.interestRate && (
-                      <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Interest Rate</p>
-                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
-                      </div>
-                    )}
-                    {lead.appliedProduct.loanAmount && (
-                      <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Amount</p>
-                          <p className="font-black text-slate-900 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {lead.appliedProduct.tenure && (
-                      <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Max Tenure</p>
-                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
-                      </div>
-                    )}
-                    {lead.appliedProduct.processingFee && (
-                      <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Proc. Fee</p>
-                          <p className="font-black text-slate-900 text-sm">{lead.appliedProduct.processingFee}</p>
-                      </div>
-                    )}
+                     {lead.appliedProduct.interestRate && (
+                       <div>
+                           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Interest Rate</p>
+                           <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{lead.appliedProduct.interestRate.min}% <span className="text-[10px] text-slate-400 font-bold">p.a</span></p>
+                       </div>
+                     )}
+                     {lead.appliedProduct.loanAmount && (
+                       <div>
+                           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Amount</p>
+                           <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">₹{lead.appliedProduct.loanAmount.max?.toLocaleString()}</p>
+                       </div>
+                     )}
+                     {lead.appliedProduct.tenure && (
+                       <div>
+                           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Tenure</p>
+                           <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{lead.appliedProduct.tenure.maxMonths} <span className="text-[10px] text-slate-400 font-bold">Months</span></p>
+                       </div>
+                     )}
+                     {lead.appliedProduct.processingFee && (
+                       <div>
+                           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Proc. Fee</p>
+                           <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{lead.appliedProduct.processingFee}</p>
+                       </div>
+                     )}
                  </div>
               )}
             </div>
           )}
 
           {/* Customer Information */}
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden group">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500/20"></div>
-            <h2 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 border-b border-slate-50 pb-4">
-              <User className="size-4" /> Identity Data
-            </h2>
+            <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-850 pb-3 mb-4">
+              <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <User className="size-4" /> Identity Data
+              </h2>
+              {isColdCalling && isNotRegistered && (
+                <button
+                  onClick={handleOpenRegisterModal}
+                  className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <UserPlus className="size-3.5" /> Quick Add
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="flex items-start gap-4">
-                <div className="size-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-                  <User className="size-4 text-slate-400" />
+                <div className="size-10 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <User className="size-4 text-slate-450" />
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</p>
-                  <p className="text-[13px] font-black text-slate-900 leading-none">{lead.customerName}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full Name</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none">{lead.customerName}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="size-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-                  <Phone className="size-4 text-slate-400" />
+                <div className="size-10 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <Phone className="size-4 text-slate-450" />
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone Number</p>
-                  <p className="text-[13px] font-black text-slate-900 leading-none">{lead.phone}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Phone Number</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none">{lead.phone}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="size-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-                  <Mail className="size-4 text-slate-400" />
+                <div className="size-10 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <Mail className="size-4 text-slate-455" />
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
-                  <p className="text-[13px] font-black text-slate-900 leading-none truncate max-w-[200px]">{lead.email || '-'}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email Address</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none truncate max-w-[200px]">{lead.email || '-'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="size-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-                  <Share2 className="size-4 text-slate-400" />
+                <div className="size-10 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <Share2 className="size-4 text-slate-450" />
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagement Source</p>
-                  <p className="text-[13px] font-black text-slate-900 leading-none capitalize">{lead.source || 'LeadGen'}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Engagement Source</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none capitalize">{lead.source || 'LeadGen'}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Documents Section */}
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden group">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/20"></div>
-            <h2 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 border-b border-slate-50 pb-4">
+            <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-slate-50 dark:border-slate-850 pb-3">
               <FileText className="size-4" /> Validation Assets
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {lead.documents && lead.documents.length > 0 ? (
                 lead.documents.map((doc: any, idx: number) => (
-                  <div key={idx} className="p-3 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col gap-3 group transition-colors">
+                  <div key={idx} className="p-3 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-850/50 flex flex-col gap-2.5 transition-colors">
                     <div className="flex items-center gap-2">
-                      <div className="size-8 bg-white rounded-lg shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                      <div className="size-7 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
                         <FileText className="size-3.5 text-slate-400" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-black text-slate-900 truncate uppercase">{doc.documentType?.replace('_', ' ')}</p>
+                        <p className="text-[10px] font-semibold text-slate-900 dark:text-white truncate uppercase">{doc.documentType?.replace('_', ' ')}</p>
                       </div>
                     </div>
                     <a 
                       href={doc.url} 
                       download={doc.name} 
-                      className="w-full py-2 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5"
+                      className="w-full py-1.5 bg-slate-950 hover:bg-slate-900 text-white rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1.5"
                     >
                       View
                     </a>
@@ -357,22 +469,22 @@ export default function LeadDetailsPage() {
                 ))
               ) : (
                 <div className="col-span-full py-6 text-center">
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Awaiting Verification Files</p>
+                  <p className="text-xs font-semibold text-slate-405">Awaiting Verification Files</p>
                 </div>
               )}
             </div>
 
             {/* Request Form Integrated Here */}
-            <div className="mt-8 pt-8 border-t border-slate-100">
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Request New Doc</p>
-              <form className="flex flex-col sm:flex-row gap-4" onSubmit={handleRequestDocument}>
-                <div className="flex-1 space-y-2">
+            <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-850">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Request New Doc</p>
+              <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleRequestDocument}>
+                <div className="flex-1">
                   <input 
                     type="text" 
                     value={requestDocName}
                     onChange={e => setRequestDocName(e.target.value)}
                     placeholder="Enter document name (e.g., Salary Slip)" 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-slate-700"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all text-slate-700 dark:text-slate-200"
                   />
                 </div>
                 <button 
@@ -411,19 +523,19 @@ export default function LeadDetailsPage() {
         </div>
 
         {/* CRM Actions */}
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm p-5 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500/20"></div>
-          <h2 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 border-b border-slate-50 pb-4">
+          <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-slate-50 dark:border-slate-850 pb-3">
             <Briefcase className="size-4" /> Action Control
           </h2>
-          <form className="space-y-5" onSubmit={handleUpdate}>
+          <form className="space-y-4" onSubmit={handleUpdate}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Stage</label>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-1">Stage</label>
                 <select 
                   value={status} 
                   onChange={e => setStatus(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none text-slate-700 dark:text-slate-200"
                 >
                   <option value="new">New Entry</option>
                   <option value="assigned">Assigned</option>
@@ -436,28 +548,28 @@ export default function LeadDetailsPage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">{lead.leadType === 'cold_calling' ? 'Classification' : 'Asset Class'}</label>
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-1">{lead.leadType === 'cold_calling' ? 'Classification' : 'Asset Class'}</label>
                 <input 
                   type="text" 
                   value={lead.loanType || "Cold Calling"}
                   readOnly
-                  className="w-full bg-slate-50/50 border-none rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed opacity-60"
+                  className="w-full bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-450 cursor-not-allowed opacity-60"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Internal Note</label>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider pl-1">Internal Note</label>
               <textarea 
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 placeholder="PERSIST STATUS UPDATE REMARK..."
                 rows={2}
-                className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-[11px] font-black uppercase placeholder:opacity-30 focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none resize-none"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold placeholder:opacity-30 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none resize-none text-slate-700 dark:text-slate-200"
               />
             </div>
 
-            <button type="submit" disabled={updating} className="w-full py-4 text-[10px] font-black text-white bg-slate-900 rounded-2xl transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2 uppercase tracking-widest">
+            <button type="submit" disabled={updating} className="w-full py-2.5 text-xs font-semibold text-white bg-slate-955 hover:bg-slate-900 rounded-lg transition-all flex items-center justify-center gap-2 uppercase">
               {updating ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Commit Update
             </button>
           </form>
@@ -576,8 +688,8 @@ export default function LeadDetailsPage() {
       </div>
 
       {/* Lead Timeline */}
-      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 md:p-8">
-        <h2 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2 border-b border-slate-50 pb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm p-6 md:p-8">
+        <h2 className="text-xs md:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-6 flex items-center gap-2 border-b border-slate-50 dark:border-slate-850 pb-3">
           <Clock className="size-4" /> Operations Timeline
         </h2>
         
@@ -625,6 +737,187 @@ export default function LeadDetailsPage() {
           })}
         </div>
       </div>
+
+      {/* Quick Add Registration Modal */}
+      <AnimatePresence>
+        {showRegisterModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowRegisterModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl border border-slate-100 dark:border-slate-800 shadow-xl relative z-10 overflow-hidden"
+            >
+              <form onSubmit={handleRegisterSubmit} className="p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                      <UserPlus className="size-4.5" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Quick Add Profile</h3>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowRegisterModal(false)}
+                    className="p-1 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg text-slate-400"
+                  >
+                    <X className="size-4.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500">Name</label>
+                    <input 
+                      type="text"
+                      value={registerData.name}
+                      onChange={e => setRegisterData({...registerData, name: e.target.value})}
+                      placeholder="Customer Name"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-855 rounded-xl py-2 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-100"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500">Phone</label>
+                    <div className="flex gap-2">
+                      <select className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-855 rounded-xl px-2 py-2 text-xs font-semibold outline-none cursor-pointer text-slate-700 dark:text-slate-350">
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+1">+1 (US)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+971">+971 (AE)</option>
+                      </select>
+                      <div className="relative flex-1">
+                        <input 
+                          type="text"
+                          value={registerData.phone}
+                          onChange={e => {
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                            setRegisterData({...registerData, phone: val});
+                          }}
+                          placeholder="10-digit mobile number"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-855 rounded-xl py-2 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-100"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500">Email Address</label>
+                    <input 
+                      type="email"
+                      value={registerData.email}
+                      onChange={e => setRegisterData({...registerData, email: e.target.value})}
+                      placeholder="customer@email.com"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-855 rounded-xl py-2 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-100"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-500">Auto-Generated Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                      <input 
+                        type="text"
+                        value={registerData.password}
+                        onChange={e => setRegisterData({...registerData, password: e.target.value})}
+                        placeholder="Security code"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-855 rounded-xl py-2 pl-9 pr-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 font-mono text-slate-800 dark:text-slate-100"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-2">
+                  <button 
+                    type="submit"
+                    disabled={registeringUser}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {registeringUser ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+                    Register Customer
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowRegisterModal(false)}
+                    className="flex-1 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Credentials Display Modal */}
+      <AnimatePresence>
+        {showCredentialsModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCredentialsModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-xl border border-slate-100 dark:border-slate-800 shadow-xl relative z-10 overflow-hidden"
+            >
+              <div className="p-6 text-center space-y-4">
+                <div className="size-12 bg-emerald-100 text-emerald-650 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                  <CheckCircle2 className="size-7 stroke-[2.5]" />
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Credentials Dispatch</h3>
+                  <p className="text-xs text-slate-450 dark:text-slate-400">Copy these login details to send to the client</p>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-left space-y-2">
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block">USERNAME (EMAIL)</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 select-all">{createdCredentials.email}</span>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-2">
+                    <span className="text-[10px] font-semibold text-slate-400 block">PASSWORD</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono select-all text-emerald-600 dark:text-emerald-400">{createdCredentials.password}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <button 
+                    onClick={handleCopyCredentials}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                  >
+                    <Copy className="size-4" /> Copy Credentials
+                  </button>
+                  <button 
+                    onClick={() => setShowCredentialsModal(false)}
+                    className="w-full bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

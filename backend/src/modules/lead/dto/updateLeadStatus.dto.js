@@ -6,6 +6,8 @@ module.exports = Joi.object({
 
     followUpDate: Joi.date(),
     
-    note: Joi.string().allow("").optional()
+    note: Joi.string().allow("").optional(),
+
+    customerId: Joi.string().optional()
 
 });

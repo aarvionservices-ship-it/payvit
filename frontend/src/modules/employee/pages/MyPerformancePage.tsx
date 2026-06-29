@@ -64,23 +64,18 @@ export default function MyPerformancePage() {
   }));
 
   return (
-    <div className="space-y-6 lg:space-y-10 pb-20">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-5">
-          <div className="size-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
-            <TrendingUp className="size-7" />
-          </div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white">Performance Metrics</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-0.5">Statistical Intelligence Alpha</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Performance Metrics</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Overview of your call activities, conversions, and target efficiency tracker</p>
         </div>
-        <select className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm cursor-pointer">
+        <select className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm cursor-pointer">
           <option value="30">Last 30 Days</option>
           <option value="7">Last 7 Days</option>
           <option value="90">Last 90 Days</option>
@@ -88,91 +83,87 @@ export default function MyPerformancePage() {
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {STATS.map((stat, i) => (
           <motion.div 
             key={stat.label}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative group overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden"
           >
-            <div className={`absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity`}>
-              <stat.icon className="size-20" />
+            <div className="relative z-10 flex flex-col gap-3">
+              <div className={`size-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center border border-slate-105 dark:border-slate-800`}>
+                <stat.icon className="size-4.5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{stat.label}</p>
+                <h3 className="text-2xl font-bold tracking-tight mt-1 text-slate-900 dark:text-white">{stat.value}</h3>
+              </div>
             </div>
-            <div className={`size-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-5 border border-slate-50 dark:border-slate-800 shadow-inner group-hover:rotate-6 transition-transform`}>
-              <stat.icon className="size-6" />
-            </div>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{stat.label}</p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</h3>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Trend Analysis */}
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2 space-y-6"
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-2 space-y-4"
         >
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-primary/10 rounded-xl">
-               <BarChart3 className="size-5 text-primary" />
-             </div>
-             <h2 className="text-xl font-black text-slate-900 dark:text-white">Trend Intelligence</h2>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="size-4.5 text-slate-400" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Performance Trend</h2>
           </div>
-          <div className="aspect-[16/9] lg:aspect-auto lg:h-[400px] bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 flex items-center justify-center relative shadow-sm overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-            <p className="text-slate-300 dark:text-slate-600 font-black text-sm uppercase tracking-[0.2em] relative z-10 flex items-center gap-3">
-              <TrendingUp className="size-5" /> Generative Analysis Pending
+          <div className="aspect-[16/9] lg:aspect-auto lg:h-[360px] bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-center relative shadow-sm overflow-hidden group">
+            <p className="text-slate-350 dark:text-slate-600 font-semibold text-xs uppercase tracking-wider relative z-10 flex items-center gap-2">
+              <TrendingUp className="size-4.5" /> Generative Analysis Pending
             </p>
           </div>
         </motion.div>
 
         {/* Recent Conversions */}
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-6"
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-xl">
-                <CheckCircle2 className="size-5 text-emerald-600" />
-              </div>
-              Victories
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <CheckCircle2 className="size-4.5 text-emerald-600" />
+              Conversions
             </h2>
-            <Link to="/employee/leads" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
+            <Link to="/employee/leads" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors">
               Pipeline <ArrowUpRight className="size-3" />
             </Link>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <AnimatePresence>
               {CONVERSIONS.map((conv, i) => (
                 <motion.div
                   key={conv.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + i * 0.1 }}
-                  className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all"
+                  transition={{ delay: 0.15 + i * 0.05 }}
+                  className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`size-12 rounded-2xl ${conv.bg} ${conv.color} flex items-center justify-center border border-slate-100 dark:border-slate-800 shadow-inner group-hover:scale-110 transition-transform`}>
-                      <conv.icon className="size-6" />
+                  <div className="flex items-center gap-3.5">
+                    <div className={`size-9 rounded-lg ${conv.bg} ${conv.color} flex items-center justify-center border border-slate-100 dark:border-slate-800 shrink-0`}>
+                      <conv.icon className="size-4.5" />
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">{conv.name}</h4>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{conv.type}</p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors truncate text-sm">{conv.name}</h4>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase mt-0.5">{conv.type}</p>
                     </div>
-                    <div className="text-right">
-                       <div className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase mb-1">Success</div>
-                       <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 justify-end">
-                         <Calendar className="size-3" /> {conv.date}
-                       </div>
+                    <div className="text-right shrink-0">
+                      <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wider">Success</span>
+                      <div className="text-[9px] font-medium text-slate-400 mt-1 flex items-center gap-1 justify-end">
+                        <Calendar className="size-3" /> {conv.date}
+                      </div>
                     </div>
                   </div>
                 </motion.div>

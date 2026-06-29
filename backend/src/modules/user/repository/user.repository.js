@@ -2,6 +2,10 @@ const User = require("../../auth/model/auth.model");
 
 class UserRepository {
 
+    async createUser(data) {
+        return User.create(data);
+    }
+
     async findById(userId) {
         return User.findOne({ userId });
     }

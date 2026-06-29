@@ -53,6 +53,8 @@ import AdminAnalyticsPage from "../modules/admin/pages/AnalyticsPage"
 import AdminEmployeesPage from "../modules/admin/pages/EmployeesPage"
 import AdminEmployeeRegisterPage from "../modules/admin/pages/EmployeeRegisterPage"
 import AdminEmployeeDetailsPage from "../modules/admin/pages/EmployeeDetailsPage"
+import AdminCustomersPage from "../modules/admin/pages/CustomersPage"
+import AdminCustomerDetailsPage from "../modules/admin/pages/CustomerDetailsPage"
 import AdminLeadsPage from "../modules/admin/pages/LeadsPage"
 import AdminLeadDetailsPage from "../modules/admin/pages/LeadDetailsPage"
 import AdminLoansPage from "../modules/admin/pages/LoansPage"
@@ -147,6 +149,8 @@ export default function AppRouter() {
                 <Route path="employees/register" element={<AdminEmployeeRegisterPage />} />
                 <Route path="employees/edit/:id" element={<AdminEmployeeRegisterPage />} />
                 <Route path="employees/:id" element={<AdminEmployeeDetailsPage />} />
+                <Route path="customers" element={<AdminCustomersPage />} />
+                <Route path="customers/:id" element={<AdminCustomerDetailsPage />} />
                 <Route path="leads" element={<AdminLeadsPage />} />
                 <Route path="leads/:id" element={<AdminLeadDetailsPage />} />
                 <Route path="loans" element={<AdminLoansPage />} />

@@ -31,7 +31,11 @@ class LoanService {
             filter.bankName = { $regex: filter.bankName, $options: "i" };
         }
         if (filter.loanType) {
-            filter.loanType = { $regex: `^${filter.loanType}$`, $options: "i" };
+            let mappedType = filter.loanType;
+            if (mappedType.toLowerCase() === 'personal') mappedType = 'unsecured';
+            if (mappedType.toLowerCase() === 'business') mappedType = 'business_loan';
+            if (mappedType.toLowerCase() === 'home') mappedType = 'home_loan';
+            filter.loanType = { $regex: `^${mappedType}$`, $options: "i" };
         }
 
         const sort = sorting(query);

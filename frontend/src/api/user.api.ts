@@ -20,3 +20,8 @@ export async function createCustomerRequest(data: any) {
     return res.data
 }
 
+export async function getUserByIdRequest(id: string) {
+    const res = await api.get(`/users/${id}`)
+    return res.data
+}
+

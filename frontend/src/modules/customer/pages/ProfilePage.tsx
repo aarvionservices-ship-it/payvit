@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, Save, Camera, Key, ShieldCheck, Calendar, Briefcase, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +10,7 @@ import { useAuthStore } from '../../../store/auth.store';
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits").max(15).optional().or(z.literal('')),
+  phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits and contain only numbers').optional().or(z.literal('')),
   profileImage: z.string().optional().nullable(),
   dob: z.string().optional().nullable().or(z.date()),
   gender: z.string().optional().nullable(),
@@ -432,13 +432,25 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
-                      <input 
-                        type="tel" 
-                        {...register("phone")}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
-                      />
+                    <div className="flex gap-2">
+                      <select className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm font-medium focus:outline-none cursor-pointer">
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+1">+1 (US)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+971">+971 (AE)</option>
+                      </select>
+                      <div className="relative flex-1">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
+                        <input 
+                          type="tel" 
+                          {...register("phone", {
+                            onChange: (e) => {
+                              e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                            }
+                          })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                        />
+                      </div>
                     </div>
                     {errors.phone && <p className="text-xs text-rose-500">{(errors.phone as any).message}</p>}
                   </div>

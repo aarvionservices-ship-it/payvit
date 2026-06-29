@@ -79,12 +79,16 @@ class LeadService {
 
         const lead = await leadRepo.findById(leadId);
         const oldStatus = lead?.status;
+        const updateFields = {
+            status: data.status,
+            followUpDate: data.followUpDate
+        };
+        if (data.customerId) {
+            updateFields.customerId = data.customerId;
+        }
         await leadRepo.updateLead(
             leadId,
-            {
-                status: data.status,
-                followUpDate: data.followUpDate
-            }
+            updateFields
         );
 
         eventBus.emit("lead.status.updated", {

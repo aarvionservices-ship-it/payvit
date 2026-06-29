@@ -67,6 +67,23 @@ class UserController {
 
     }
 
+    async getUser(req, res) {
+
+        const user = await userService.getProfile(
+            req.params.id
+        );
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.json({
+            success: true,
+            data: user
+        });
+
+    }
+
 }
 
 module.exports = new UserController();

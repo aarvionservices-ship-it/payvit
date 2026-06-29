@@ -43,6 +43,13 @@ router.post(
     userController.createCustomer
 );
 
+router.get(
+    "/:id",
+    auth,
+    roles(["admin", "employee"]),
+    userController.getUser
+);
+
 router.delete(
     "/:id",
     auth,

@@ -143,11 +143,22 @@ export default function LeadsPage() {
     }
   };
 
+  const isAllOnPageSelected = useMemo(() => {
+    return leads.length > 0 && leads.every(l => selectedLeads.includes(l.leadId));
+  }, [leads, selectedLeads]);
+
   const toggleSelectAll = () => {
-    if (selectedLeads.length === leads.length) {
-      setSelectedLeads([]);
+    if (isAllOnPageSelected) {
+      const leadIdsToRemove = leads.map(l => l.leadId);
+      setSelectedLeads(prev => prev.filter(id => !leadIdsToRemove.includes(id)));
     } else {
-      setSelectedLeads(leads.map(l => l.leadId));
+      const newSelections = [...selectedLeads];
+      leads.forEach(l => {
+        if (!newSelections.includes(l.leadId)) {
+          newSelections.push(l.leadId);
+        }
+      });
+      setSelectedLeads(newSelections);
     }
   };
 
@@ -211,13 +222,13 @@ export default function LeadsPage() {
     <div className="space-y-6 lg:space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">Leads Acquisition</h1>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.4em] mt-1">Real-time Lead Intelligence</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-955 dark:text-white">Leads Acquisition</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Monitor, assign, and track customer applied and cold calling leads</p>
         </div>
         {activeTab === 'cold_calling' && (
           <button
             onClick={() => setShowUploadModal(true)}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-all rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white transition-all rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
           >
             <Upload className="size-4" /> Upload Leads List
           </button>
@@ -228,7 +239,7 @@ export default function LeadsPage() {
       <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
         <button
           onClick={() => setActiveTab('applied')}
-          className={`pb-4 text-xs font-black uppercase tracking-[0.15em] relative transition-all cursor-pointer ${activeTab === 'applied' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-3 text-xs font-semibold relative transition-all cursor-pointer ${activeTab === 'applied' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
         >
           Customer Applied
           {activeTab === 'applied' && (
@@ -237,7 +248,7 @@ export default function LeadsPage() {
         </button>
         <button
           onClick={() => setActiveTab('cold_calling')}
-          className={`pb-4 text-xs font-black uppercase tracking-[0.15em] relative transition-all cursor-pointer ${activeTab === 'cold_calling' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-3 text-xs font-semibold relative transition-all cursor-pointer ${activeTab === 'cold_calling' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
         >
           Cold Calling List
           {activeTab === 'cold_calling' && (
@@ -250,18 +261,18 @@ export default function LeadsPage() {
       <AnimatePresence>
         {selectedLeads.length > 0 && (
           <motion.div 
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex items-center justify-between bg-primary/10 border border-primary/20 p-4 rounded-2xl"
+            exit={{ opacity: 0, y: -15 }}
+            className="flex items-center justify-between bg-primary/10 border border-primary/20 p-3 rounded-xl"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <CheckCircle2 className="size-5 text-primary" />
-              <span className="text-sm font-black text-primary uppercase tracking-widest">{selectedLeads.length} Leads Selected</span>
+              <span className="text-xs font-semibold text-primary">{selectedLeads.length} Leads Selected</span>
             </div>
             <button 
               onClick={() => setShowAssignModal('bulk')}
-              className="px-6 py-2 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+              className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm"
             >
               Bulk Assign Agent
             </button>
@@ -269,7 +280,7 @@ export default function LeadsPage() {
         )}
       </AnimatePresence>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-3 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative max-w-md w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
           <input
@@ -277,19 +288,19 @@ export default function LeadsPage() {
             placeholder="Search leads by name or phone..."
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-xl py-2 pl-11 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all text-slate-700 dark:text-slate-200 placeholder:opacity-50"
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto relative">
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex-1 lg:flex-none p-3 border rounded-xl transition-all relative ${showFilters ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            className={`flex-1 lg:flex-none p-2 border rounded-xl transition-all relative ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
           >
-             <Filter className="size-4 mx-auto" />
+             <Filter className="size-4.5 mx-auto" />
           </button>
 
-          <button className="flex-1 lg:flex-none p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-all shadow-sm">
-            <Download className="size-4 mx-auto" />
+          <button className="flex-1 lg:flex-none p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-all shadow-sm">
+            <Download className="size-4.5 mx-auto" />
           </button>
 
           <AnimatePresence>
@@ -403,12 +414,12 @@ export default function LeadsPage() {
                 return (
                   <motion.div
                     key={lead.leadId}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
                     onClick={() => toggleSelectLead(lead.leadId)}
-                    className={`bg-white dark:bg-slate-900 p-5 rounded-[2rem] border transition-all relative overflow-hidden group active:scale-[0.98] ${selectedLeads.includes(lead.leadId) ? 'border-primary ring-2 ring-primary/10 shadow-xl' : 'border-slate-200 dark:border-slate-800 shadow-sm'}`}
+                    className={`bg-white dark:bg-slate-900 p-5 rounded-2xl border transition-all relative overflow-hidden group active:scale-[0.99] ${selectedLeads.includes(lead.leadId) ? 'border-primary ring-2 ring-primary/10 shadow-md' : 'border-slate-100 dark:border-slate-800/80 shadow-sm'}`}
                   >
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center gap-4">
@@ -429,15 +440,19 @@ export default function LeadsPage() {
 
                     <div className="grid grid-cols-1 gap-3 mb-6">
                        {lead.assignedEmployee ? (
-                         <div className="p-4 bg-slate-50 dark:bg-slate-800/10 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                         <Link 
+                           to={`/admin/employees/${lead.assignedEmployee}`}
+                           onClick={(e) => e.stopPropagation()}
+                           className="w-full p-4 bg-slate-50 dark:bg-slate-800/10 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
+                         >
                             <div>
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Active Custodian</span>
-                                <span className="text-sm font-black text-slate-700 dark:text-slate-300">{assignedEmp?.name || "System Protocol"}</span>
+                                <span className="text-sm font-black text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
                             </div>
                             <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black text-xs">
                               {assignedEmp?.name?.[0] || "S"}
                             </div>
-                         </div>
+                         </Link>
                        ) : (
                          <button 
                            onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
@@ -478,77 +493,87 @@ export default function LeadsPage() {
             </AnimatePresence>
           </div>
 
-          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-8 py-6 w-12">
+                <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4.5 w-12">
                     <button 
                       onClick={toggleSelectAll}
-                      className={`size-5 rounded border-2 flex items-center justify-center transition-all ${selectedLeads.length > 0 && selectedLeads.length === leads.length ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800'}`}
+                      className={`size-4.5 rounded border flex items-center justify-center transition-all ${isAllOnPageSelected ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800/80 bg-white'}`}
                     >
-                      {selectedLeads.length > 0 && selectedLeads.length === leads.length && <Check className="size-3.5 text-white" />}
+                      {isAllOnPageSelected && <Check className="size-3 text-white" />}
                     </button>
                   </th>
-                  <th className="px-8 py-6">Identity Profile</th>
-                  <th className="px-8 py-6">Protocol</th>
-                  <th className="px-8 py-6">Custodian</th>
-                  <th className="px-8 py-6">State</th>
-                  <th className="px-8 py-6 text-right">Actions</th>
+                  <th className="px-6 py-4.5">Customer Profile</th>
+                  <th className="px-6 py-4.5">Classification</th>
+                  <th className="px-6 py-4.5">Assigned Agent</th>
+                  <th className="px-6 py-4.5">Stage</th>
+                  <th className="px-6 py-4.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {leads.map((lead) => {
                   const category = getCategoryIcon(lead.loanType, lead.leadType);
+                  const assignedEmp = employeesMap[lead.assignedEmployee];
                   
                   return (
                     <tr 
                       key={lead.leadId} 
                       onClick={() => toggleSelectLead(lead.leadId)}
-                      className={`transition-colors group cursor-pointer ${selectedLeads.includes(lead.leadId) ? 'bg-primary/5' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                      className={`transition-colors group cursor-pointer border-b border-slate-100/50 dark:border-slate-800/55 last:border-b-0 ${selectedLeads.includes(lead.leadId) ? 'bg-primary/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850'}`}
                     >
-                      <td className="px-8 py-6">
-                        <div className={`size-5 rounded border-2 flex items-center justify-center transition-all ${selectedLeads.includes(lead.leadId) ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800'}`}>
-                          {selectedLeads.includes(lead.leadId) && <Check className="size-3.5 text-white" />}
+                      <td className="px-6 py-4">
+                        <div className={`size-4.5 rounded border flex items-center justify-center transition-all ${selectedLeads.includes(lead.leadId) ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800'}`}>
+                          {selectedLeads.includes(lead.leadId) && <Check className="size-3 text-white" />}
                         </div>
                       </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`size-11 rounded-xl ${category.bg} ${category.color} flex items-center justify-center border border-white shadow-md group-hover:scale-110 transition-transform`}>
-                            <category.icon className="size-5" />
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`size-9 rounded-xl ${category.bg} ${category.color} flex items-center justify-center border border-white dark:border-slate-800 shadow-sm group-hover:scale-105 transition-transform`}>
+                            <category.icon className="size-4" />
                           </div>
                           <div>
-                            <span className="font-black text-slate-900 dark:text-white block leading-none">{lead.customerName}</span>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 block flex items-center gap-1"><Phone className="size-3" /> {lead.phone}</span>
+                            <span className="font-semibold text-slate-900 dark:text-white block leading-tight text-sm">{lead.customerName}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 block flex items-center gap-1"><Phone className="size-3" /> {lead.phone}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
-                        <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">{lead.loanType || "Cold Calling"}</span>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{lead.loanType || "Cold Calling"}</span>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-4 py-3">
                         {lead.assignedEmployee ? (
-                          <div className="flex items-center gap-2">
-                             <div className="size-7 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-black text-[10px]">{employeesMap[lead.assignedEmployee]?.name?.[0] || 'S'}</div>
-                             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{employeesMap[lead.assignedEmployee]?.name || "System Protocol"}</span>
-                          </div>
+                          <Link 
+                            to={`/admin/employees/${lead.assignedEmployee}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full p-2 bg-slate-50 dark:bg-slate-800/10 rounded-lg border border-slate-50 dark:border-slate-850 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
+                          >
+                             <div className="flex items-center gap-2">
+                                 <div className="size-6 bg-primary/10 rounded-md flex items-center justify-center text-primary font-bold text-[9px]">{assignedEmp?.name?.[0] || 'S'}</div>
+                                 <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
+                             </div>
+                          </Link>
                         ) : (
                           <button 
                             onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
-                            className="bg-rose-500/10 text-rose-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center gap-2"
+                            className="w-full p-2 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center justify-between group transition-all"
                           >
-                             <UserPlus className="size-3.5" /> Assign
+                             <div className="flex items-center gap-2">
+                                 <UserPlus className="size-3 text-rose-500" />
+                                 <span className="text-[10px] font-semibold text-rose-500">Assign</span>
+                             </div>
                           </button>
                         )}
                       </td>
-                      <td className="px-8 py-6">
-                        <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(lead.status)} shadow-sm`}>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border whitespace-nowrap ${getStatusStyles(lead.status)} shadow-sm`}>
                           {lead.status}
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-right" onClick={(e) => e.stopPropagation()}>
-                         <div className="flex items-center justify-end gap-2 px-1">
-                            <Link to={`/admin/leads/${lead.leadId}`} className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                         <div className="flex items-center justify-end gap-1.5">
+                            <Link to={`/admin/leads/${lead.leadId}`} className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-primary border border-slate-100 dark:border-slate-700 rounded-lg text-[11px] font-semibold uppercase tracking-wider hover:bg-primary hover:text-white transition-all">
                               View
                             </Link>
                          </div>

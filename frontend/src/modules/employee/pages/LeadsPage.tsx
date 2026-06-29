@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Users, Phone, Briefcase, CreditCard, Landmark, ChevronRight, MoreVertical, Calendar, UserPlus, Loader2 } from 'lucide-react';
+import { Search, Filter, Users, Phone, Briefcase, CreditCard, Landmark, ChevronRight, Calendar, UserPlus, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { getLeadsRequest } from '../../../api/lead.api';
@@ -91,53 +91,49 @@ export default function LeadsPage() {
   return (
     <div className="space-y-6 lg:space-y-10 pb-20">
       {/* Search and Filters Hub */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 mx-1 md:mx-0"
-      >
+      <div className="bg-white dark:bg-slate-900 p-4 md:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative z-20 mx-1 md:mx-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="size-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-500/10 rotate-3">
-              <Users className="size-6" />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="size-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white shadow-md">
+              <Users className="size-5" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-wide text-slate-900 dark:text-white uppercase not-italic leading-none">Pipeline</h1>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.3em] mt-1">Assigned Channel</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-955 dark:text-white">Leads Pipeline</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Monitor and manage your assigned leads pipeline</p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
              <div className="relative w-full md:w-64 lg:w-80">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-               <input 
-                 type="text" 
-                 value={filters.search}
-                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                 placeholder="Search identifiers..." 
-                 className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3.5 pl-12 pr-6 text-[11px] font-bold uppercase tracking-widest focus:ring-2 focus:ring-primary/10 transition-all dark:text-white placeholder:opacity-40"
-               />
-             </div>
-             
-             <div className="flex items-center gap-3 w-full sm:w-auto relative">
-               <button 
-                 onClick={() => setShowFilters(!showFilters)}
-                 className={`flex-1 sm:flex-none p-3.5 relative border rounded-2xl transition-all shadow-sm flex items-center justify-center min-w-[50px] ${showFilters ? 'bg-primary text-white border-primary shadow-xl shadow-primary/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}`}
-               >
-                 <Filter className="size-5" />
-                 {activeFilterCount > 0 && (
-                   <span className="absolute -top-1 -right-1 size-5 bg-rose-500 text-white text-[9px] flex items-center justify-center rounded-full border-2 border-white dark:border-slate-950 font-black">
-                     {activeFilterCount}
-                   </span>
-                 )}
-               </button>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  placeholder="Search leads by name or phone..." 
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 rounded-xl py-2 pl-11 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all text-slate-700 dark:text-slate-200 placeholder:opacity-50"
+                />
+              </div>
+              
+              <div className="flex items-center gap-3 w-full sm:w-auto relative">
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex-1 sm:flex-none p-2 relative border rounded-xl transition-all shadow-sm flex items-center justify-center ${showFilters ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}`}
+                >
+                  <Filter className="size-4.5" />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 size-5 bg-rose-500 text-white text-[9px] flex items-center justify-center rounded-full border-2 border-white dark:border-slate-950 font-bold">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
 
-               <button 
-                 onClick={() => navigate('/employee/leads/create')}
-                 className="flex-[2] sm:flex-none px-6 py-3.5 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-               >
-                 <UserPlus className="size-4" /> New Lead
-               </button>
+                <button 
+                  onClick={() => navigate('/employee/leads/create')}
+                  className="flex-[2] sm:flex-none px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/95 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <UserPlus className="size-4" /> New Lead
+                </button>
 
                <AnimatePresence>
                  {showFilters && (
@@ -151,33 +147,33 @@ export default function LeadsPage() {
                        className="fixed md:hidden inset-0 bg-slate-900/40 backdrop-blur-sm z-[99]"
                      />
 
-                     <motion.div
-                       initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                       exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                       className="fixed md:absolute bottom-0 md:bottom-auto md:top-full left-0 right-0 md:left-auto md:right-0 mt-0 md:mt-4 w-full md:w-72 bg-white dark:bg-slate-900 border-t md:border border-slate-200 dark:border-slate-800 rounded-t-[2.5rem] md:rounded-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.1),0_20px_50px_rgba(0,0,0,0.1)] z-[100] p-8 md:p-5 space-y-6 md:space-y-4"
-                     >
-                        <div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-2 md:hidden" />
+                      <motion.div
+                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 15, scale: 0.98 }}
+                        className="fixed md:absolute bottom-0 md:bottom-auto md:top-full left-0 right-0 md:left-auto md:right-0 mt-0 md:mt-3 w-full md:w-72 bg-white dark:bg-slate-900 border-t md:border border-slate-100 dark:border-slate-800 rounded-t-2xl md:rounded-xl shadow-lg z-[100] p-6 md:p-4 space-y-4"
+                      >
+                         <div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-2 md:hidden" />
                         
                         <div className="space-y-4">
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 px-1">Lead Lifecycle</label>
-                            <select 
-                              value={filters.status} 
-                              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                              className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                            >
-                              <option value="all">All Channels</option>
-                              <option value="new">New Entry</option>
-                              <option value="assigned">Assigned</option>
-                              <option value="contacted">Contacted</option>
-                              <option value="interested">Interested</option>
-                              <option value="callback">Callback</option>
-                              <option value="in-progress">In-Progress</option>
-                              <option value="converted">Converted</option>
-                              <option value="rejected">Rejected</option>
-                            </select>
-                          </div>
+                           <div>
+                             <label className="text-xs font-semibold text-slate-500 block mb-2 px-1">Lead Lifecycle</label>
+                             <select 
+                               value={filters.status} 
+                               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/25 cursor-pointer"
+                             >
+                               <option value="all">All Channels</option>
+                               <option value="new">New Entry</option>
+                               <option value="assigned">Assigned</option>
+                               <option value="contacted">Contacted</option>
+                               <option value="interested">Interested</option>
+                               <option value="callback">Callback</option>
+                               <option value="in-progress">In-Progress</option>
+                               <option value="converted">Converted</option>
+                               <option value="rejected">Rejected</option>
+                             </select>
+                           </div>
                           
                           <div>
                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 px-1">Portfolio Class</label>
@@ -194,10 +190,10 @@ export default function LeadsPage() {
                           </div>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                          <button onClick={() => { setFilters({ search: filters.search, status: 'all', type: 'all' }); setShowFilters(false); }} className="text-[9px] font-black uppercase tracking-widest text-rose-500 px-2 py-1 hover:opacity-70 transition-all">Clear Focus</button>
-                          <button onClick={() => setShowFilters(false)} className="md:hidden px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl shadow-xl shadow-slate-900/10">Apply Focus</button>
-                        </div>
+                         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                           <button onClick={() => { setFilters({ search: filters.search, status: 'all', type: 'all' }); setShowFilters(false); }} className="text-xs font-semibold text-rose-500 hover:opacity-75 transition-all">Clear</button>
+                           <button onClick={() => setShowFilters(false)} className="md:hidden px-4 py-2 bg-slate-955 dark:bg-white text-white dark:text-slate-950 text-xs font-semibold rounded-lg shadow-sm">Apply</button>
+                         </div>
                      </motion.div>
                    </>
                  )}
@@ -205,7 +201,7 @@ export default function LeadsPage() {
              </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -231,24 +227,24 @@ export default function LeadsPage() {
                 return (
                   <motion.div
                     key={lead.leadId}
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-transform"
+                    transition={{ delay: i * 0.03 }}
+                    className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm relative overflow-hidden group active:scale-[0.99] transition-transform"
                   >
-                    <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`size-12 rounded-2xl bg-gradient-to-br ${style.gradient} ${style.color} flex items-center justify-center font-black text-xs border border-slate-100 dark:border-slate-800 shadow-inner`}>
+                        <div className={`size-10 rounded-xl bg-gradient-to-br ${style.gradient} ${style.color} flex items-center justify-center font-semibold text-xs border border-slate-100 dark:border-slate-800 shadow-sm`}>
                           {getInitials(lead.customerName)}
                         </div>
                         <div>
-                          <h4 className="font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">{lead.customerName}</h4>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                          <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">{lead.customerName}</h4>
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                             <Phone className="size-3" /> {lead.phone}
                           </span>
                         </div>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${getStatusStyles(lead.status)} shadow-sm`}>
+                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider border whitespace-nowrap ${getStatusStyles(lead.status)} shadow-sm`}>
                         {lead.status}
                       </span>
                     </div>
@@ -264,14 +260,14 @@ export default function LeadsPage() {
                       </div>
                     </div>
                     
-                    <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex gap-2">
+                    <div className="pt-3 border-t border-slate-50 dark:border-slate-850 flex gap-2">
                       <Link 
                         to={`/employee/leads/${lead.leadId}`}
-                        className="flex-1 bg-primary text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+                        className="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-all"
                       >
                         Workspace <ChevronRight className="size-4" />
                       </Link>
-                      <button className="size-11 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all active:scale-90">
+                      <button className="size-9 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
                         <Phone className="size-4" />
                       </button>
                     </div>
@@ -282,21 +278,16 @@ export default function LeadsPage() {
           </div>
 
           {/* Desktop Table Layout */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="hidden lg:block bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden"
-          >
-            <table className="w-full text-left">
+          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-10 py-6">Lead Identity</th>
-                  <th className="px-10 py-6">Connectivity</th>
-                  <th className="px-10 py-6">Portfolio Segment</th>
-                  <th className="px-10 py-6">Engagement</th>
-                  <th className="px-10 py-6">Timeline</th>
-                  <th className="px-10 py-6 text-right">Utility</th>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4.5">Customer Profile</th>
+                  <th className="px-6 py-4.5">Phone Number</th>
+                  <th className="px-6 py-4.5">Classification</th>
+                  <th className="px-6 py-4.5">Stage</th>
+                  <th className="px-6 py-4.5">Assigned Date</th>
+                  <th className="px-6 py-4.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -305,39 +296,36 @@ export default function LeadsPage() {
                   const Icon = style.icon;
                   
                   return (
-                    <tr key={lead.leadId} className="hover:bg-primary/[0.02] dark:hover:bg-primary/5 transition-colors group cursor-pointer">
-                      <td className="px-10 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`size-12 rounded-2xl bg-gradient-to-br ${style.gradient} ${style.color} flex items-center justify-center font-black text-xs border border-slate-100 dark:border-slate-800 shadow-inner group-hover:rotate-6 transition-transform`}>
+                    <tr key={lead.leadId} className="transition-colors group cursor-pointer border-b border-slate-100/50 dark:border-slate-800/55 last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-slate-850">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`size-9 rounded-xl bg-gradient-to-br ${style.gradient} ${style.color} flex items-center justify-center font-semibold text-xs border border-white dark:border-slate-800 shadow-sm`}>
                             {getInitials(lead.customerName)}
                           </div>
-                          <span className="font-black text-slate-900 dark:text-white group-hover:text-primary transition-all">{lead.customerName}</span>
+                          <span className="font-semibold text-slate-900 dark:text-white text-sm group-hover:text-primary transition-colors">{lead.customerName}</span>
                         </div>
                       </td>
-                      <td className="px-10 py-6">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{lead.phone}</span>
+                      <td className="px-6 py-4">
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{lead.phone}</span>
                       </td>
-                      <td className="px-10 py-6">
-                        <div className="flex items-center gap-2 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">
-                          <Icon className="size-4 opacity-40" /> {lead.loanType || 'N/A'}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                          <Icon className="size-4 opacity-50" /> {lead.loanType || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-10 py-6">
-                        <span className={`px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(lead.status)} shadow-sm`}>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider border whitespace-nowrap ${getStatusStyles(lead.status)} shadow-sm`}>
                           {lead.status}
                         </span>
                       </td>
-                      <td className="px-10 py-6 italic text-[10px] font-bold text-slate-400">
-                        {new Date(lead.createdAt).toLocaleDateString()}
+                      <td className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
-                      <td className="px-10 py-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link to={`/employee/leads/${lead.leadId}`} className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm">
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link to={`/employee/leads/${lead.leadId}`} className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-primary border border-slate-100 dark:border-slate-700 rounded-lg text-[11px] font-semibold uppercase tracking-wider hover:bg-primary hover:text-white transition-all">
                               Details
                           </Link>
-                          <button className="p-2.5 text-slate-400 hover:text-primary transition-all rounded-xl hover:bg-primary/5">
-                              <MoreVertical className="size-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -345,7 +333,7 @@ export default function LeadsPage() {
                 })}
               </tbody>
             </table>
-          </motion.div>
+          </div>
         </>
       )}
     </div>

@@ -23,7 +23,7 @@ import { toast } from "react-hot-toast";
 const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    phone: z.string().min(10, "Phone number must be at least 10 digits").max(10, "Phone number must be 10 digits"),
+    phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits and contain only numbers'),
     password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal('')),
     isActive: z.boolean().optional(),
 });
@@ -180,12 +180,26 @@ export default function EmployeeRegisterPage() {
                                 <Phone className="size-4 text-slate-400" /> Phone Number
                             </label>
 
-                            <input
-                                {...register("phone")}
-                                type="tel"
-                                placeholder="10-digit mobile number"
-                                className="w-full border-2 border-slate-100 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                            />
+                            <div className="flex gap-2">
+                                <select className="border-2 border-slate-100 bg-white rounded-xl px-3 py-3 text-sm focus:outline-none cursor-pointer">
+                                    <option value="+91">+91 (IN)</option>
+                                    <option value="+1">+1 (US)</option>
+                                    <option value="+44">+44 (UK)</option>
+                                    <option value="+971">+971 (AE)</option>
+                                </select>
+                                <div className="relative flex-1">
+                                    <input
+                                        {...register("phone", {
+                                            onChange: (e) => {
+                                                e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                                            }
+                                        })}
+                                        type="tel"
+                                        placeholder="10-digit mobile number"
+                                        className="w-full border-2 border-slate-100 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                    />
+                                </div>
+                            </div>
 
                             {errors.phone && (
                                 <p className="text-xs font-bold text-red-500">{errors.phone.message}</p>

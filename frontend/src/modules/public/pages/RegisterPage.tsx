@@ -1,4 +1,4 @@
-﻿// modules/public/pages/RegisterPage.tsx
+// modules/public/pages/RegisterPage.tsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, ArrowRight, UserPlus, Fingerprint, ShieldCheck, Phone, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -13,7 +13,7 @@ import { SEO } from '../../../components/shared/SEO';
 const registerSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits'),
+  phone: z.string().regex(/^[0-9]{10}$/, 'Phone number must be exactly 10 digits and contain only numbers'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
@@ -132,19 +132,31 @@ export default function RegisterPage() {
             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <Phone className="size-4 text-emerald-500" /> Phone Number
             </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Phone className={`size-5 transition-colors ${errors.phone ? 'text-red-500' : 'text-slate-400 group-focus-within:text-emerald-500'}`} />
+            <div className="flex gap-2">
+              <select className="bg-white border-2 border-slate-100 rounded-2xl px-3 py-3.5 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm cursor-pointer">
+                <option value="+91">+91 (IN)</option>
+                <option value="+1">+1 (US)</option>
+                <option value="+44">+44 (UK)</option>
+                <option value="+971">+971 (AE)</option>
+              </select>
+              <div className="relative group flex-1">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Phone className={`size-5 transition-colors ${errors.phone ? 'text-red-500' : 'text-slate-400 group-focus-within:text-emerald-500'}`} />
+                </div>
+                <input
+                  {...register('phone', {
+                    onChange: (e) => {
+                      e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    }
+                  })}
+                  type="tel"
+                  placeholder="9876543210"
+                  className={`w-full bg-white border-2 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-4 transition-all shadow-sm ${errors.phone
+                      ? 'border-red-100 focus:ring-red-500/10 focus:border-red-500'
+                      : 'border-slate-100 focus:ring-emerald-500/10 focus:border-emerald-500'
+                    }`}
+                />
               </div>
-              <input
-                {...register('phone')}
-                type="tel"
-                placeholder="+91 9876543210"
-                className={`w-full bg-white border-2 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-4 transition-all shadow-sm ${errors.phone
-                    ? 'border-red-100 focus:ring-red-500/10 focus:border-red-500'
-                    : 'border-slate-100 focus:ring-emerald-500/10 focus:border-emerald-500'
-                  }`}
-              />
             </div>
             {errors.phone && (
               <motion.p

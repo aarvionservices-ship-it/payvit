@@ -23,7 +23,25 @@ class EmployeeRepository {
             },
             {
                 $addFields: {
-                    leadsCount: { $size: "$leads" }
+                    leadsCount: { $size: "$leads" },
+                    convertedCount: {
+                        $size: {
+                            $filter: {
+                                input: "$leads",
+                                as: "lead",
+                                cond: { $eq: ["$$lead.status", "converted"] }
+                            }
+                        }
+                    },
+                    rejectedCount: {
+                        $size: {
+                            $filter: {
+                                input: "$leads",
+                                as: "lead",
+                                cond: { $eq: ["$$lead.status", "rejected"] }
+                            }
+                        }
+                    }
                 }
             },
             { $project: { leads: 0 } },

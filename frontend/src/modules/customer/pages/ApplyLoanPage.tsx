@@ -85,7 +85,10 @@ export default function ApplyLoanPage() {
   }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === "phone") {
+      value = value.replace(/[^0-9]/g, '').slice(0, 10);
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -100,6 +103,10 @@ export default function ApplyLoanPage() {
     if (currentStep === 0) {
       if (!formData.fullName || !formData.phone || !formData.email) {
         toast.error('Please fill all required personal details');
+        return;
+      }
+      if (!/^[0-9]{10}$/.test(formData.phone)) {
+        toast.error('Phone number must be exactly 10 digits and contain only numbers');
         return;
       }
     } else if (currentStep === 1) {
@@ -294,9 +301,16 @@ export default function ApplyLoanPage() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number *</label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">+91</span>
-                          <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-slate-900" placeholder="9876543210" />
+                        <div className="flex gap-2">
+                          <select className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm font-medium focus:outline-none cursor-pointer">
+                            <option value="+91">+91 (IN)</option>
+                            <option value="+1">+1 (US)</option>
+                            <option value="+44">+44 (UK)</option>
+                            <option value="+971">+971 (AE)</option>
+                          </select>
+                          <div className="relative flex-1">
+                            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-slate-900" placeholder="9876543210" />
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-2">

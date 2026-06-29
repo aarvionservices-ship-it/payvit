@@ -3,8 +3,6 @@ import {
   PhoneCall, 
   CheckCircle2, 
   TrendingUp, 
-  MoreVertical, 
-  ChevronRight,
   ArrowUpRight,
   Calendar,
   Clock,
@@ -100,80 +98,70 @@ export default function EmployeeDashboardPage() {
   };
 
   return (
-    <div className="space-y-6 lg:space-y-10 pb-20">
+    <div className="space-y-6 pb-12">
       {/* Header Section */}
       <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-5">
-          <div className="size-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 text-xl font-black rotate-3">
-            E
-          </div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white">My Workspace</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-0.5">Performance Intelligence</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Workspace Dashboard</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Overview of assigned leads and performance status</p>
         </div>
         <div className="flex items-center gap-3">
-           <div className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-black text-slate-500 dark:text-slate-400 shadow-sm flex items-center gap-2">
-            <Calendar className="size-3.5 text-primary" /> Today
+          <div className="px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 shadow-sm flex items-center gap-2">
+            <Calendar className="size-3.5 text-emerald-600" /> Today
           </div>
         </div>
       </motion.div>
 
       {/* Analytics Recap */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Assigned', count: stats.assigned.toString(), icon: Target, color: 'blue', trend: '+12%' },
           { label: 'Contacted', count: stats.contacted.toString(), icon: PhoneCall, color: 'amber', trend: '+5' },
-          { label: 'Converted', count: stats.converted.toString(), icon: CheckCircle2, color: 'emerald', trend: 'â†‘' },
+          { label: 'Converted', count: stats.converted.toString(), icon: CheckCircle2, color: 'emerald', trend: '↑' },
           { label: 'Efficiency', count: stats.efficiency, icon: TrendingUp, color: 'purple', trend: 'Good' },
         ].map((stat, i) => (
           <motion.div 
             key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all relative overflow-hidden active:scale-95"
+            transition={{ delay: i * 0.05 }}
+            className="group bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden"
           >
-            <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity`}>
-              <stat.icon className="size-20" />
-            </div>
-            <div className="relative z-10 flex flex-col gap-4">
-              <div className={`size-12 rounded-2xl flex items-center justify-center ${getStatColorClasses(stat.color).split(' ').filter(c => c.startsWith('bg-')).join(' ')}`}>
-                <stat.icon className={`size-6 ${getStatColorClasses(stat.color).split(' ').filter(c => c.startsWith('text-')).join(' ')}`} />
+            <div className="relative z-10 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className={`size-8 rounded-lg flex items-center justify-center ${getStatColorClasses(stat.color).split(' ').filter(c => c.startsWith('bg-')).join(' ')}`}>
+                  <stat.icon className={`size-4.5 ${getStatColorClasses(stat.color).split(' ').filter(c => c.startsWith('text-')).join(' ')}`} />
+                </div>
+                <span className="text-xs font-semibold text-emerald-600">{stat.trend}</span>
               </div>
               <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
-                  <span className="text-[10px] font-black text-emerald-500">{stat.trend}</span>
-                </div>
-                <h3 className="text-3xl font-black mt-1 text-slate-900 dark:text-white">{stat.count}</h3>
+                <p className="text-xs font-medium text-slate-505 dark:text-slate-400">{stat.label}</p>
+                <h3 className="text-2xl font-bold tracking-tight mt-1 text-slate-900 dark:text-white">{stat.count}</h3>
               </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Leads Module */}
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2 space-y-6"
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-2 space-y-4"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Target className="size-5 text-primary" />
-              </div>
-              Recent Intelligence
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Target className="size-4.5 text-slate-400" />
+              Recent Leads
             </h2>
-            <Link to="/employee/leads" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-              View All Pipeline <ArrowUpRight className="size-3" />
+            <Link to="/employee/leads" className="text-xs font-semibold text-emerald-600 hover:text-emerald-705 flex items-center gap-1 transition-colors">
+              View Pipeline <ArrowUpRight className="size-3" />
             </Link>
           </div>
 
@@ -183,37 +171,37 @@ export default function EmployeeDashboardPage() {
               {RECENT_LEADS.map((lead, i) => (
                 <motion.div
                   key={lead.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.1 }}
-                  className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group active:scale-[0.98]"
+                  transition={{ delay: 0.15 + i * 0.05 }}
+                  className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={`size-10 rounded-2xl bg-gradient-to-br ${lead.gradient} ${lead.color} flex items-center justify-center font-black text-[10px] border border-slate-100 dark:border-slate-800 shadow-inner`}>
+                      <div className={`size-8 rounded-lg bg-gradient-to-br ${lead.gradient} ${lead.color} flex items-center justify-center font-bold text-[10px] border border-slate-100 dark:border-slate-800`}>
                         {lead.initials}
                       </div>
                       <div>
-                        <h4 className="font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">{lead.name}</h4>
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                        <h4 className="font-bold text-slate-950 dark:text-white group-hover:text-emerald-600 transition-colors text-sm">{lead.name}</h4>
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 uppercase">
                           <lead.icon className="size-3" /> {lead.type}
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest border ${getStatusStyles(lead.statusType)} shadow-sm`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border ${getStatusStyles(lead.statusType)}`}>
                       {lead.status}
                     </span>
                   </div>
                   
-                  <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
                       <Clock className="size-3" /> {lead.time}
                     </div>
                     <Link 
                       to={`/employee/leads/${lead.id}`}
-                      className="size-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all group/btn"
+                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors"
                     >
-                      <ChevronRight className="size-5 group-hover/btn:translate-x-0.5 transition-transform" />
+                      Details
                     </Link>
                   </div>
                 </motion.div>
@@ -222,44 +210,44 @@ export default function EmployeeDashboardPage() {
           </div>
 
           {/* Desktop Leads Layout */}
-          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
+          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-8 py-6">Customer Profile</th>
-                  <th className="px-8 py-6">Lead Type</th>
-                  <th className="px-8 py-6">Current Status</th>
-                  <th className="px-8 py-6">Time Inflow</th>
-                  <th className="px-8 py-6 text-right">Action</th>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-4">Customer Profile</th>
+                  <th className="px-6 py-4">Lead Type</th>
+                  <th className="px-6 py-4">Current Status</th>
+                  <th className="px-6 py-4">Time Inflow</th>
+                  <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {RECENT_LEADS.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className={`size-12 rounded-2xl bg-gradient-to-br ${lead.gradient} ${lead.color} flex items-center justify-center font-black text-xs border border-slate-100 dark:border-slate-800 shadow-inner`}>
+                  <tr key={lead.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`size-8 rounded-lg bg-gradient-to-br ${lead.gradient} ${lead.color} flex items-center justify-center font-bold text-[10px] border border-slate-100 dark:border-slate-800`}>
                           {lead.initials}
                         </div>
-                        <span className="font-black text-slate-900 dark:text-white group-hover:text-primary transition-all">{lead.name}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{lead.name}</span>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">
-                        <lead.icon className="size-3.5 opacity-50" /> {lead.type}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-450 uppercase tracking-tight">
+                        <lead.icon className="size-3.5 opacity-60" /> {lead.type}
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <span className={`px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(lead.statusType)} shadow-sm`}>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border ${getStatusStyles(lead.statusType)} shadow-none`}>
                         {lead.status}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{lead.time}</span>
+                    <td className="px-6 py-4">
+                      <span className="text-xs text-slate-500">{lead.time}</span>
                     </td>
-                    <td className="px-8 py-5 text-right">
-                      <Link to={`/employee/leads/${lead.id}`} className="size-10 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary transition-all inline-flex items-center justify-center rounded-xl shadow-sm hover:scale-110">
-                        <MoreVertical className="size-4" />
+                    <td className="px-6 py-4 text-right">
+                      <Link to={`/employee/leads/${lead.id}`} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-650 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        Details
                       </Link>
                     </td>
                   </tr>
@@ -271,37 +259,31 @@ export default function EmployeeDashboardPage() {
 
         {/* Predictive Analytics */}
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-6"
+          transition={{ delay: 0.1 }}
+          className="space-y-4"
         >
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-xl">
-              <TrendingUp className="size-5 text-emerald-600" />
-            </div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <TrendingUp className="size-4.5 text-slate-405 animate-pulse" />
             Conversion Engine
           </h2>
-          <div className="bg-gradient-to-tr from-slate-900 to-indigo-950 dark:from-slate-900 dark:to-slate-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden min-h-[300px] flex flex-col justify-between group">
-             <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-1000">
-               <TrendingUp className="size-32 text-white" />
-             </div>
+          <div className="bg-[#0E1320] p-6 rounded-xl border border-slate-850 relative overflow-hidden min-h-[280px] flex flex-col justify-between group shadow-sm">
              <div className="relative z-10">
-               <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.3em] mb-4">Live Performance</p>
-               <h3 className="text-white text-2xl font-black leading-tight">Your conversion velocity is <span className="text-emerald-400">optimal</span> today.</h3>
+               <p className="text-emerald-400 font-semibold text-[10px] uppercase tracking-wider mb-2">Live Performance</p>
+               <h3 className="text-white text-lg font-bold leading-snug">Your conversion velocity is <span className="text-emerald-400">optimal</span> today.</h3>
              </div>
-             <div className="relative z-10 pt-10 border-t border-white/10">
+             <div className="relative z-10 pt-6 border-t border-slate-800">
                <div className="flex items-center justify-between mb-2">
-                 <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Daily Milestone</span>
-                 <span className="text-white font-black text-xs">84%</span>
+                 <span className="text-slate-400 text-xs font-semibold">Daily Milestone</span>
+                 <span className="text-white font-bold text-xs">84%</span>
                </div>
-               <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+               <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                  <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: '84%' }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                    className="h-full bg-emerald-500"
-                 />
+                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                    className="h-full bg-emerald-550"                 />
                </div>
              </div>
           </div>
@@ -310,4 +292,3 @@ export default function EmployeeDashboardPage() {
     </div>
   );
 }
-
