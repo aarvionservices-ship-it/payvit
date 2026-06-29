@@ -896,12 +896,6 @@ export default function PublicLayout() {
                   </span>{" "}
                   support@payvit.com
                 </li>
-                <li className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-xs">
-                    call
-                  </span>{" "}
-                  +1 (555) 000-1234
-                </li>
                 <li className="flex items-center gap-2 text-primary font-bold">
                   <span className="material-symbols-outlined text-xs">
                     chat
