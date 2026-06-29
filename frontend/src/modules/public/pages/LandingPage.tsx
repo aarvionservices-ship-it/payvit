@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ServiceCard from "../components/ServiceCard";
 import { SEO } from "../../../components/shared/SEO";
@@ -79,8 +79,8 @@ export default function LandingPage() {
   return (
     <>
       <SEO
-        title="Compare & Apply for Best Loans and Cards"
-        description="Get instant approvals and the best interest rates from 50+ partner banks. Compare personal loans, business loans, and credit cards with PayVit."
+        title="Secure Wallet & Instant Token Transfers"
+        description="Store tokens pegged 1:1 to Rupees, load money instantly, and transfer funds securely to anyone. Experience zero fees with PayVit Wallet."
       />
 
       {/* Hero Section */}
@@ -96,27 +96,25 @@ export default function LandingPage() {
               </span>
             </div>
             <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] text-slate-900 dark:text-white">
-              Compare &amp; Apply for the{" "}
-              <span className="text-primary">Best Loans</span> and Cards
+              Secure Wallet &amp; Instant{" "}
+              <span className="text-primary">Token Transfers</span>
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-400 max-w-lg leading-relaxed">
-              Get instant approvals and the best interest rates from 50+ partner
-              banks. Your financial freedom starts here with personalized
-              recommendations.
+              Store tokens pegged 1:1 to Rupees, add money instantly, and transfer funds securely to anyone. Zero fees, maximum convenience.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                to="/offers"
+                to="/customer/wallet"
                 className="px-8 py-4 bg-primary text-white rounded-xl font-bold text-lg hover:scale-105 transition-transform flex items-center gap-2"
               >
-                Explore Offers{" "}
+                Go to Wallet{" "}
                 <span className="material-symbols-outlined">trending_flat</span>
               </Link>
               <Link
                 to="/register"
                 className="px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-lg hover:bg-slate-50 transition-colors"
               >
-                Apply Now
+                Get Started
               </Link>
             </div>
 
@@ -125,7 +123,7 @@ export default function LandingPage() {
                 <span className="material-symbols-outlined text-xl">call</span>
               </div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Still confused about the loans?{" "}
+                Need help with your wallet?{" "}
                 <a
                   href="tel:+15550001234"
                   className="text-primary font-bold hover:underline"
@@ -192,10 +190,10 @@ export default function LandingPage() {
 
                   <div>
                     <p className="text-xs text-slate-500 font-medium">
-                      Loan Approved
+                      Transfer Successful
                     </p>
 
-                    <p className="text-lg font-bold">$25,000.00</p>
+                    <p className="text-lg font-bold">500.00 Tokens</p>
                   </div>
                 </div>
               </div>
@@ -208,44 +206,43 @@ export default function LandingPage() {
       <section className="px-6 lg:px-20 py-20 bg-white dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold mb-4">Financial Services</h2>
+            <h2 className="text-3xl font-bold mb-4">Wallet Services</h2>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              One-stop shop for all your credit needs. Choose from a wide range
-              of products designed for your growth.
+              Manage your digital tokens and transfer instantly. Everything you need for daily payments in one secure wallet.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ServiceCard
-              icon="person"
-              title="Personal Loan"
-              description="Instant cash up to ₹50k with minimal documentation."
+              icon="account_balance_wallet"
+              title="Rs to Token Conversion"
+              description="Load funds instantly. 1 Rupee = 1 PayVit Token."
               colorTheme="blue"
               delay={0.1}
-              to="/offers?category=Personal Loans"
+              to="/customer/wallet"
             />
             <ServiceCard
-              icon="business_center"
-              title="Business Loan"
-              description="Scale your business with competitive interest rates."
+              icon="send"
+              title="Instant Transfers"
+              description="Send tokens to any user instantly using their email/phone."
               colorTheme="purple"
               delay={0.2}
-              to="/offers?category=Business"
+              to="/customer/wallet"
             />
             <ServiceCard
-              icon="credit_card"
-              title="Credit Cards"
-              description="Best rewards & cashback tailored for your lifestyle."
+              icon="receipt_long"
+              title="Utility Payments"
+              description="Pay for mobile recharge, electricity, and other daily bills."
               colorTheme="rose"
               delay={0.3}
-              to="/offers?category=Credit Cards"
+              to="/recharge"
             />
             <ServiceCard
-              icon="home"
-              title="Home Loan"
-              description="Own your dream home with easy EMI options."
+              icon="security"
+              title="Secure Vault"
+              description="All tokens and transactions are safely recorded and verified."
               colorTheme="emerald"
               delay={0.4}
-              to="/offers?category=Home Loans"
+              to="/customer/wallet"
             />
           </div>
         </div>

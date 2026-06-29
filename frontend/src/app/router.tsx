@@ -86,6 +86,7 @@ import CustomerProfilePage from "../modules/customer/pages/ProfilePage"
 import CustomerApplyLoanPage from "../modules/customer/pages/ApplyLoanPage"
 import CompleteProfilePage from "../modules/customer/pages/CompleteProfilePage"
 import UtilityServicesPage from "../modules/customer/pages/UtilityServicesPage"
+import WalletPage from "../modules/customer/pages/WalletPage"
 
 export default function AppRouter() {
     return (
@@ -102,7 +103,7 @@ export default function AppRouter() {
                 <Route path="/loans" element={<LoanPage />} />
                 <Route path="/loans/compare" element={<LoanComparePage />} />
                 <Route path="/loan/:loanId" element={<LoanDetailsPage />} />
-                
+
                 {/* Calculator Routes */}
                 <Route path="/calculators" element={<CalculatorsPage />} />
                 <Route path="/calculators/emi" element={<EmiCalculator />} />
@@ -197,6 +198,7 @@ export default function AppRouter() {
                 }
             >
                 <Route index element={<CustomerDashboardPage />} />
+                <Route path="wallet" element={<WalletPage />} />
                 <Route path="offers" element={<CustomerOffersPage />} />
                 <Route path="offers/:id" element={<CustomerOfferDetailsPage />} />
                 <Route path="apply/:id" element={<CustomerApplyLoanPage />} />
@@ -212,4 +214,5 @@ export default function AppRouter() {
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     )
-}
+}
+

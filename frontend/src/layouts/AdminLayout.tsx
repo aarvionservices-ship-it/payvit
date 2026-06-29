@@ -2,9 +2,7 @@ import { Outlet, NavLink, Link } from "react-router-dom"
 import {
     LayoutDashboard,
     Users,
-    Landmark,
     Settings,
-    CreditCard,
     User,
     LogOut,
     TrendingUp,
@@ -27,12 +25,10 @@ export default function AdminLayout() {
 
     const navItems = [
         { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-        { label: "Cards", href: "/admin/cards", icon: CreditCard },
         { label: "Analytics", href: "/admin/analytics", icon: TrendingUp },
         { label: "Employees", href: "/admin/employees", icon: Users },
         { label: "Leads", href: "/admin/leads", icon: FileText },
         { label: "Blogs", href: "/admin/blogs", icon: Newspaper },
-        { label: "Loans", href: "/admin/loans", icon: Landmark },
         { label: "Emails", href: "/admin/email-templates", icon: Mail },
         { label: "Profile", href: "/admin/profile", icon: User },
         { label: "Settings", href: "/admin/settings", icon: Settings },

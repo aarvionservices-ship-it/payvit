@@ -24,6 +24,7 @@ const rechargeRoutes = require("./modules/recharge/routes/recharge.routes");
 const blogRoutes = require("./modules/blog/routes/blog.routes");
 const emailTemplateRoutes = require("./modules/emailTemplate/routes/emailTemplate.routes");
 const healthRoutes = require("./modules/health/routes/health.routes");
+const walletRoutes = require("./modules/wallet/routes/wallet.routes");
 
 // Initialize Subscribers
 require("./modules/leadHistory/subscriber/leadHistory.subscriber");
@@ -70,6 +71,7 @@ app.use("/api/v1/recharges", rechargeRoutes);
 app.use("/api/v1/blogs", blogRoutes);
 app.use("/api/v1/email-templates", emailTemplateRoutes);
 app.use("/api/v1/health", healthRoutes);
+app.use("/api/v1/wallet", walletRoutes);
 
 
 app.use(errorHandler);

@@ -1,12 +1,10 @@
 import { Outlet, NavLink, Link } from "react-router-dom"
 import { 
     LayoutDashboard, 
-    Heart, 
-    ClipboardList, 
     User, 
     LogOut,
-    Search,
-    Zap
+    Zap,
+    Wallet
 } from "lucide-react"
 import { useAuthStore } from "../store/auth.store"
 import { clsx, type ClassValue } from "clsx"
@@ -23,10 +21,8 @@ export default function CustomerLayout() {
 
     const navItems = [
         { label: "Dashboard", href: "/customer", icon: LayoutDashboard, end: true },
-        { label: "Offers", href: "/customer/offers", icon: Search },
+        { label: "Wallet", href: "/customer/wallet", icon: Wallet },
         { label: "Services", href: "/customer/services", icon: Zap },
-        { label: "Applications", href: "/customer/applications", icon: ClipboardList },
-        { label: "Favorites", href: "/customer/favorites", icon: Heart },
         { label: "Profile", href: "/customer/profile", icon: User },
     ]
 

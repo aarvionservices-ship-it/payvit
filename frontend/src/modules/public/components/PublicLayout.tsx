@@ -6,19 +6,13 @@ import logo from "../../../assets/PayvitLogo.png";
 import {
   Bell,
   ChevronDown,
-  ChevronRight,
   Menu,
   X,
-  CreditCard,
-  Sparkles,
-  ShieldCheck,
-  Zap,
   Calculator,
   TrendingUp,
   Wallet,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { categories } from "../../../data/mockData";
 
 export default function PublicLayout() {
   const { user } = useAuthStore();
@@ -45,31 +39,13 @@ export default function PublicLayout() {
 
   const navOptions = {
     services: [
-      {
-        title: "Loans",
-        items: [
-          { label: "Personal Loan", to: "/offers?category=Personal Loans" },
-          { label: "Business Loan", to: "/offers?category=Business" },
-          { label: "Home Loan", to: "/offers?category=Home Loans" },
-          { label: "Auto Loan", to: "/offers?category=Auto Loans" },
-        ],
-      },
-      {
-        title: "Credit Cards",
-        items: categories.map((cat) => ({
-          label: `${cat.name} Cards`,
-          to: `/cards/${cat.id}`,
-        })),
-      },
+      { label: "Wallet & Transfer", to: "/customer/wallet" },
       { label: "Insurance", to: "/offers" },
       { label: "Investments", to: "/offers" },
       {
         title: "Calculators",
         items: [
-          { label: "EMI Calculator", to: "/calculators/emi" },
           { label: "SIP Calculator", to: "/calculators/sip" },
-          { label: "Credit Card Interest", to: "/calculators/credit-card" },
-          { label: "Loan Eligibility", to: "/calculators/loan-eligibility" },
         ],
       },
     ],
@@ -114,132 +90,12 @@ export default function PublicLayout() {
             {/* Main Dropdown */}
             <div className="absolute top-full left-0 w-64 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-2 overflow-visible">
-                {/* Loans Nested Dropdown */}
-                <div className="relative group/sub">
-                  <button className="flex items-center justify-between w-full px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary rounded-xl transition-all">
-                    Loans
-                    <ChevronRight className="size-4 opacity-50" />
-                  </button>
-                  {/* Side Dropdown */}
-                  <div className="absolute top-0 left-full pl-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-300 min-w-[200px]">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-2">
-                      <Link
-                        to="/offers?category=Personal Loans"
-                        className="block px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-                      >
-                        Personal Loan
-                      </Link>
-                      <Link
-                        to="/offers?category=Business"
-                        className="block px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-                      >
-                        Business Loan
-                      </Link>
-                      <Link
-                        to="/offers?category=Home Loans"
-                        className="block px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-                      >
-                        Home Loan
-                      </Link>
-                      <Link
-                        to="/offers?category=Auto Loans"
-                        className="block px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-                      >
-                        Auto Loan
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Credit Cards Nested Dropdown */}
-                <div className="relative group/sub">
-                  <Link
-                    to="/cards"
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary rounded-xl transition-all"
-                  >
-                    Credit Cards
-                    <ChevronRight className="size-4 opacity-50" />
-                  </Link>
-                  {/* Side Mega Dropdown */}
-                  <div className="absolute top-0 left-full pl-3 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-300 w-[550px] pointer-events-none group-hover/sub:pointer-events-auto">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-8 flex gap-8">
-                      {/* Left: All Categories */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-6 px-2">
-                          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                            <CreditCard className="size-4" />
-                          </div>
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            All Categories
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {categories.map((cat) => (
-                            <Link
-                              key={cat.id}
-                              to={`/cards/${cat.id}`}
-                              className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-500 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group/item"
-                            >
-                              <span
-                                className={`material-symbols-outlined text-lg ${cat.color} opacity-70 group-hover/item:opacity-100 transition-opacity`}
-                              >
-                                {cat.icon}
-                              </span>
-                              {cat.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Right: 3 Special Options */}
-                      <div className="w-[180px] flex flex-col gap-3 border-l border-slate-100 dark:border-white/5 pl-8">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 px-1">
-                          Top Features
-                        </h4>
-
-                        <Link
-                          to="/cards?filter=rewards"
-                          className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 group/opt transition-all hover:scale-[1.02]"
-                        >
-                          <Sparkles className="size-5 text-amber-600 mb-2 group-hover/opt:scale-110 transition-transform" />
-                          <div className="text-[10px] font-black text-amber-800 dark:text-amber-400 uppercase tracking-tight">
-                            Best Rewards
-                          </div>
-                          <div className="text-[9px] text-amber-600/70 mt-0.5">
-                            Max benefits
-                          </div>
-                        </Link>
-
-                        <Link
-                          to="/cards?filter=nofee"
-                          className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 group/opt transition-all hover:scale-[1.02]"
-                        >
-                          <ShieldCheck className="size-5 text-emerald-600 mb-2 group-hover/opt:scale-110 transition-transform" />
-                          <div className="text-[10px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-tight">
-                            Zero Annual Fee
-                          </div>
-                          <div className="text-[9px] text-emerald-600/70 mt-0.5">
-                            Lifetime free
-                          </div>
-                        </Link>
-
-                        <Link
-                          to="/cards/premium"
-                          className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 group/opt transition-all hover:scale-[1.02]"
-                        >
-                          <Zap className="size-5 text-indigo-600 mb-2 group-hover/opt:scale-110 transition-transform" />
-                          <div className="text-[10px] font-black text-indigo-800 dark:text-indigo-400 uppercase tracking-tight">
-                            Premium Elite
-                          </div>
-                          <div className="text-[9px] text-indigo-600/70 mt-0.5">
-                            Exclusive perks
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+                <Link
+                  to="/customer/wallet"
+                  className="block px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary rounded-xl transition-all"
+                >
+                  Wallet & Transfer
+                </Link>
                 <Link
                   to="/offers"
                   className="block px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary rounded-xl transition-all"
@@ -317,18 +173,6 @@ export default function PublicLayout() {
                         path: "/calculators/sip",
                         icon: "trending_up",
                         color: "text-primary",
-                      },
-                      {
-                        name: "Credit Card Interest",
-                        path: "/calculators/credit-card",
-                        icon: "credit_card",
-                        color: "text-rose-500",
-                      },
-                      {
-                        name: "Loan Eligibility",
-                        path: "/calculators/loan-eligibility",
-                        icon: "verified_user",
-                        color: "text-amber-500",
                       },
                     ].map((calc, idx) => (
                       <Link

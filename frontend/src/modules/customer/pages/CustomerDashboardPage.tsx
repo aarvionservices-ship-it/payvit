@@ -1,28 +1,37 @@
-﻿import { useState, useEffect } from 'react';
-import { Landmark, Percent, FileText, CheckCircle2, Heart, Star, ArrowRight, Banknote, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+    Wallet, 
+    FileText, 
+    CheckCircle2, 
+    Star, 
+    ArrowRight, 
+    Loader2, 
+    ArrowDownLeft, 
+    ArrowUpRight, 
+    Send, 
+    Plus 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getLoans } from '../../../api/loan.api';
 import { getLeadsRequest } from '../../../api/lead.api';
+import { getWalletRequest } from '../../../api/wallet.api';
 import { useAuthStore } from '../../../store/auth.store';
-import type { LoanModel } from '../../../types';
 
 export default function CustomerDashboardPage() {
   const user = useAuthStore((state) => state.user);
-  const [recommendedLoans, setRecommendedLoans] = useState<LoanModel[]>([]);
+  const [wallet, setWallet] = useState<any | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [loansRes, leadsRes] = await Promise.all([
-          getLoans(),
+        const [walletRes, leadsRes] = await Promise.all([
+          getWalletRequest(),
           getLeadsRequest()
         ]);
         
-        if (loansRes.success) {
-          const loansData = loansRes.data?.data || (Array.isArray(loansRes.data) ? loansRes.data : []);
-          setRecommendedLoans(loansData.slice(0, 3));
+        if (walletRes.success) {
+          setWallet(walletRes.data);
         }
         if (leadsRes.success) {
           const leadsData = leadsRes.data?.data || (Array.isArray(leadsRes.data) ? leadsRes.data : []);
@@ -40,14 +49,15 @@ export default function CustomerDashboardPage() {
   const stats = {
     submitted: Array.isArray(applications) ? applications.length : 0,
     approved: Array.isArray(applications) ? applications.filter(a => ['approved', 'converted'].includes(a.status?.toLowerCase())).length : 0,
-    favorites: user?.favoriteOffers?.length || 0
+    balance: wallet?.balance || 0
   };
 
   return (
     <div className="space-y-6 lg:space-y-8">
+      {/* Welcome Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 lg:p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
         <div className="flex items-center gap-4">
-          <div className="size-12 lg:size-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/20 text-lg lg:text-xl font-bold uppercase">
+          <div className="size-12 lg:size-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 text-lg lg:text-xl font-bold uppercase">
             {user?.name?.[0] || 'U'}
           </div>
           <div>
@@ -59,7 +69,25 @@ export default function CustomerDashboardPage() {
 
       {/* Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-        <Link to="/customer/applications" className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        
+        {/* Wallet Balance Card */}
+        <Link to="/customer/wallet" className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Wallet className="size-16 lg:size-24 text-indigo-600" />
+          </div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="size-10 lg:size-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
+              <Wallet className="size-5 lg:size-7" />
+            </div>
+            <div>
+              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Wallet Balance</p>
+              <h3 className="text-2xl lg:text-3xl font-black mt-0.5 text-slate-900">₹ {stats.balance.toLocaleString("en-IN")}</h3>
+            </div>
+          </div>
+        </Link>
+
+        {/* Submitted Apps Card */}
+        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <FileText className="size-16 lg:size-24 text-blue-600" />
           </div>
@@ -68,13 +96,14 @@ export default function CustomerDashboardPage() {
               <FileText className="size-5 lg:size-7" />
             </div>
             <div>
-              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Submitted</p>
+              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Submitted Applications</p>
               <h3 className="text-2xl lg:text-3xl font-black mt-0.5 text-slate-900">{stats.submitted}</h3>
             </div>
           </div>
-        </Link>
+        </div>
 
-        <Link to="/customer/applications" className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+        {/* Approved Apps Card */}
+        <div className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <CheckCircle2 className="size-16 lg:size-24 text-emerald-600" />
           </div>
@@ -83,98 +112,98 @@ export default function CustomerDashboardPage() {
               <CheckCircle2 className="size-5 lg:size-7" />
             </div>
             <div>
-              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Approved</p>
+              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Approved Applications</p>
               <h3 className="text-2xl lg:text-3xl font-black mt-0.5 text-slate-900">{stats.approved}</h3>
             </div>
           </div>
-        </Link>
-
-        <Link to="/customer/favorites" className="bg-white p-5 lg:p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group sm:col-span-2 lg:col-span-1">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Heart className="size-16 lg:size-24 text-rose-600" />
-          </div>
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="size-10 lg:size-14 bg-gradient-to-br from-rose-400 to-pink-500 text-white rounded-xl lg:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30">
-              <Heart className="size-5 lg:size-7" />
-            </div>
-            <div>
-              <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">Favorites</p>
-              <h3 className="text-2xl lg:text-3xl font-black mt-0.5 text-slate-900">{stats.favorites}</h3>
-            </div>
-          </div>
-        </Link>
+        </div>
       </div>
 
-      {/* Recommended Offers */}
+      {/* Wallet Transactions Section */}
       <section className="space-y-4 lg:space-y-6">
         <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
-              <Star className="size-5 fill-amber-500" />
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Star className="size-5 fill-indigo-500 text-indigo-500" />
             </div>
-            <h2 className="text-lg lg:text-xl font-extrabold text-slate-900">Recommended</h2>
+            <h2 className="text-lg lg:text-xl font-extrabold text-slate-900">Recent Activity</h2>
           </div>
-          <Link to="/customer/offers" className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors flex items-center gap-2">
-            View All <ArrowRight className="size-4" />
+          <Link to="/customer/wallet" className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center gap-2">
+            Go to Wallet <ArrowRight className="size-4" />
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center p-12 text-blue-500">
+          <div className="flex justify-center p-12 text-indigo-500 bg-white border border-slate-100 rounded-2xl">
             <Loader2 className="size-8 animate-spin" />
           </div>
-        ) : recommendedLoans.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
-            <p className="text-slate-500 font-bold">No recommendations currently available.</p>
+        ) : !wallet || wallet.transactions?.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center border border-slate-200 flex flex-col items-center justify-center space-y-4">
+            <p className="text-slate-500 font-bold">No recent transaction history found.</p>
+            <div className="flex gap-3">
+              <Link to="/customer/wallet" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors flex items-center gap-1.5 shadow-sm">
+                <Plus className="size-3.5" /> Load Wallet
+              </Link>
+              <Link to="/customer/wallet" className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors flex items-center gap-1.5">
+                <Send className="size-3.5" /> Send Tokens
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-            {recommendedLoans.map((loan, idx) => {
-              const gradients = [
-                'from-blue-500 to-indigo-500',
-                'from-purple-500 to-pink-500',
-                'from-emerald-500 to-teal-500'
-              ];
-              const gradient = loan.gradient || gradients[idx % gradients.length];
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+            {wallet.transactions.slice(0, 3).map((tx: any) => {
+              const isCredit = tx.type === "credit";
               return (
-              <div key={loan._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col relative group">
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${gradient}`}></div>
-                <div className="p-5 lg:p-6 flex-1 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="size-12 lg:size-14 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl flex items-center justify-center font-black text-slate-600 text-xs shadow-inner">
-                      {loan.bankName?.substring(0, 4) || 'BANK'}
+                <div key={tx._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col relative group">
+                  <div className={`absolute top-0 left-0 w-full h-1 ${isCredit ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                        isCredit 
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                          : "bg-rose-50 text-rose-600 border-rose-100"
+                      }`}>
+                        {isCredit ? <ArrowDownLeft className="size-5" /> : <ArrowUpRight className="size-5" />}
+                      </div>
+                      <span className={`text-xs font-bold uppercase tracking-wider ${isCredit ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {isCredit ? 'Credit' : 'Debit'}
+                      </span>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{loan.loanName}</h3>
-                    <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1 truncate"><Landmark className="size-3" /> {loan.bankName}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center sm:text-left">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1"><Percent className="size-3" /> Interest</p>
-                      <p className="font-bold text-blue-700 text-base">{loan.interestRate?.min || 'Varies'}%</p>
+                    
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                        {tx.transactionType === "deposit" 
+                          ? "Wallet Deposit" 
+                          : isCredit 
+                            ? `Received from ${tx.peerName || "User"}` 
+                            : `Transferred to ${tx.peerName || "User"}`
+                        }
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1">
+                        {new Date(tx.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </p>
+                      {tx.description && (
+                        <p className="text-[10px] font-semibold text-slate-500 italic truncate mt-1">"{tx.description}"</p>
+                      )}
                     </div>
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center sm:text-left">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-center sm:justify-start gap-1"><Banknote className="size-3" /> Max Limit</p>
-                      <p className="font-bold text-slate-900 text-base">₹{(loan.loanAmount?.max / 100000).toFixed(0)} L</p>
+
+                    <div className="pt-3 border-t border-slate-100 flex justify-between items-end">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Amount</span>
+                      <span className={`text-base font-black ${isCredit ? "text-emerald-600" : "text-rose-600"}`}>
+                        {isCredit ? "+" : "-"} {tx.amount.toLocaleString("en-IN")} Tokens
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex gap-2">
-                  <Link to={`/customer/offers/${loan._id}`} className="flex-1 text-center py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
-                    Details
-                  </Link>
-                  <Link to={`/customer/apply/${loan._id}`} className="flex-1 text-center py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg transition-all shadow-md block leading-10">
-                    Apply
-                  </Link>
-                </div>
-              </div>
-            )})}
+              );
+            })}
           </div>
         )}
       </section>
     </div>
   );
 }
-
