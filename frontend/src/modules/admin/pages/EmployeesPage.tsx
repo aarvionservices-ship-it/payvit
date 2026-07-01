@@ -11,6 +11,7 @@ import {
   Edit,
   Loader2,
   Key,
+  Eye,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -281,7 +282,10 @@ export default function EmployeesPage() {
                   {/* Floating Action Menu (Mobile) */}
                   <div className="flex items-start justify-between gap-4 mb-5">
                     <div className="flex items-center gap-4">
-                      <div className="size-14 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-sm border border-white dark:border-slate-800 shadow-lg group-hover:rotate-6 transition-transform overflow-hidden relative">
+                      <Link
+                        to={`/admin/employees/${employee.userId}`}
+                        className="size-14 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-sm border border-white dark:border-slate-800 shadow-lg hover:scale-105 transition-transform overflow-hidden relative shrink-0"
+                      >
                         {employee.profileImage ? (
                           <img
                             src={employee.profileImage}
@@ -294,14 +298,15 @@ export default function EmployeesPage() {
                         <div
                           className={`absolute bottom-0 right-0 size-3 border-2 border-white dark:border-slate-900 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
                         />
-                      </div>
+                      </Link>
                       <div className="w-40 overflow-hidden">
-                        <h3
+                        <Link
+                          to={`/admin/employees/${employee.userId}`}
                           title={employee.name}
-                          className="text-base font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight truncate"
+                          className="text-base font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight truncate hover:text-primary transition-colors block"
                         >
                           {employee.name}
-                        </h3>
+                        </Link>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                             {employee.role}
@@ -315,17 +320,17 @@ export default function EmployeesPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-5">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">
-                        Leads
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
+                        Total Leads
                       </span>
                       <span className="text-xs font-black text-slate-900 dark:text-white">
                         {employee.leadsCount || 0}
                       </span>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
                         Rating
                       </span>
                       <div className="flex gap-1 items-center justify-center">
@@ -335,8 +340,8 @@ export default function EmployeesPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
                         Status
                       </span>
                       <span
@@ -344,6 +349,63 @@ export default function EmployeesPage() {
                       >
                         {employee.isActive ? "Active" : "Locked"}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Lead Breakdown (Green, Red, Blue) */}
+                  <div className="mb-5 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/60 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.15em]">Lead Pipeline</span>
+                      <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">
+                        Total: {employee.leadsCount || 0}
+                      </span>
+                    </div>
+                    
+                    {/* Stacked Proportional Bar */}
+                    {employee.leadsCount > 0 ? (
+                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex mb-3">
+                        <div
+                          className="h-full bg-emerald-500 transition-all"
+                          style={{
+                            width: `${((employee.convertedCount || 0) / employee.leadsCount) * 100}%`,
+                          }}
+                          title={`Converted: ${employee.convertedCount}`}
+                        />
+                        <div
+                          className="h-full bg-blue-500 transition-all"
+                          style={{
+                            width: `${((Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))) / employee.leadsCount) * 100}%`,
+                          }}
+                          title={`Normal: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
+                        />
+                        <div
+                          className="h-full bg-rose-500 transition-all"
+                          style={{
+                            width: `${((employee.rejectedCount || 0) / employee.leadsCount) * 100}%`,
+                          }}
+                          title={`Rejected: ${employee.rejectedCount}`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-3" />
+                    )}
+
+                    {/* Numeric breakdown values */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
+                      <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 py-1 px-1.5 rounded-lg border border-emerald-100/50 dark:border-emerald-500/20">
+                        <div className="text-[8px] font-black uppercase opacity-75">Converted</div>
+                        <div className="text-xs font-black">{employee.convertedCount || 0}</div>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 py-1 px-1.5 rounded-lg border border-blue-100/50 dark:border-blue-500/20">
+                        <div className="text-[8px] font-black uppercase opacity-75">Normal</div>
+                        <div className="text-xs font-black">
+                          {Math.max(0, (employee.leadsCount || 0) - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}
+                        </div>
+                      </div>
+                      <div className="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 py-1 px-1.5 rounded-lg border border-rose-100/50 dark:border-rose-500/20">
+                        <div className="text-[8px] font-black uppercase opacity-75">Rejected</div>
+                        <div className="text-xs font-black">{employee.rejectedCount || 0}</div>
+                      </div>
                     </div>
                   </div>
 
@@ -357,11 +419,19 @@ export default function EmployeesPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
+                        navigate(`/admin/employees/${employee.userId}`)
+                      }
+                      className="flex-1 bg-primary text-white py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="size-3.5" /> Details
+                    </button>
+                    <button
+                      onClick={() =>
                         navigate(`/admin/employees/edit/${employee.userId}`)
                       }
                       className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
                     >
-                      Manage
+                      Edit
                     </button>
                     <button
                       onClick={() =>
@@ -394,11 +464,11 @@ export default function EmployeesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-6 py-4.5">Personnel</th>
-                  <th className="px-6 py-4.5">Asset Leads</th>
-                  <th className="px-6 py-4.5">Contact Info</th>
-                  <th className="px-6 py-4.5">Security status</th>
-                  <th className="px-6 py-4.5 text-right">Actions</th>
+                  <th className="px-6 py-4">Personnel</th>
+                  <th className="px-6 py-4">Asset Leads</th>
+                  <th className="px-6 py-4">Contact Info</th>
+                  <th className="px-6 py-4">Security status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -407,9 +477,12 @@ export default function EmployeesPage() {
                     key={employee.userId}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                   >
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-xs border border-white/50 dark:border-slate-800 shadow-sm group-hover:scale-110 transition-transform overflow-hidden relative">
+                        <Link
+                          to={`/admin/employees/${employee.userId}`}
+                          className="size-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-xs border border-white/50 dark:border-slate-800 shadow-sm hover:scale-110 transition-transform overflow-hidden relative shrink-0"
+                        >
                           {employee.profileImage ? (
                             <img
                               src={employee.profileImage}
@@ -422,14 +495,15 @@ export default function EmployeesPage() {
                           <div
                             className={`absolute bottom-0 right-0 size-2.5 border-2 border-white dark:border-slate-950 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
                           />
-                        </div>
+                        </Link>
                         <div className="w-40 overflow-hidden">
-                          <span
+                          <Link
+                            to={`/admin/employees/${employee.userId}`}
                             title={employee.name}
-                            className="font-black text-slate-900 dark:text-white block leading-none uppercase tracking-tight truncate"
+                            className="font-black text-slate-900 dark:text-white block leading-none uppercase tracking-tight truncate hover:text-primary transition-colors"
                           >
                             {employee.name}
-                          </span>
+                          </Link>
                           <span className="text-[9px] text-slate-400 font-black uppercase mt-1.5 block tracking-widest">
                             {employee.role}
                           </span>
@@ -437,26 +511,66 @@ export default function EmployeesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-slate-900 dark:text-white">
-                            {employee.leadsCount || 0}
+                      <div className="flex flex-col gap-2 min-w-[160px]">
+                        {/* Numeric stats pill headers */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Converted (Green) */}
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-500/10"
+                            title="Converted Leads"
+                          >
+                            {employee.convertedCount || 0}
                           </span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase">
-                            Leads
+                          {/* Normal (Blue) */}
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-100/50 dark:border-blue-500/10"
+                            title="Normal/Active Leads"
+                          >
+                            {Math.max(0, (employee.leadsCount || 0) - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}
+                          </span>
+                          {/* Rejected (Red) */}
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-100/50 dark:border-rose-500/10"
+                            title="Rejected Leads"
+                          >
+                            {employee.rejectedCount || 0}
+                          </span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase ml-auto">
+                            / {employee.leadsCount || 0} Total
                           </span>
                         </div>
-                        <div className="w-24 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{
-                              width: `${Math.min((employee.leadsCount || 0) * 5, 100)}%`,
-                            }}
-                          />
-                        </div>
+
+                        {/* Pro Stacked Progress Bar */}
+                        {employee.leadsCount > 0 ? (
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                            <div
+                              className="h-full bg-emerald-500 transition-all"
+                              style={{
+                                width: `${((employee.convertedCount || 0) / employee.leadsCount) * 100}%`,
+                              }}
+                              title={`Converted: ${employee.convertedCount}`}
+                            />
+                            <div
+                              className="h-full bg-blue-500 transition-all"
+                              style={{
+                                width: `${((Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))) / employee.leadsCount) * 100}%`,
+                              }}
+                              title={`Normal: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
+                            />
+                            <div
+                              className="h-full bg-rose-500 transition-all"
+                              style={{
+                                width: `${((employee.rejectedCount || 0) / employee.leadsCount) * 100}%`,
+                              }}
+                              title={`Rejected: ${employee.rejectedCount}`}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full" />
+                        )}
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <div className="space-y-1">
                         <span className="text-[11px] font-bold text-slate-900 dark:text-white block">
                           {employee.email}
@@ -466,21 +580,31 @@ export default function EmployeesPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 py-4">
                       <span
                         className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(employee.isActive)} shadow-sm`}
                       >
                         {employee.isActive ? "Active Mode" : "Deactivated"}
                       </span>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/employees/${employee.userId}`)
+                          }
+                          className="p-3 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+                          title="View Details"
+                        >
+                          <Eye className="size-4" />
+                        </button>
                         <button
                           onClick={() =>
                             handleResetPassword(employee.userId, employee.name)
                           }
                           disabled={resettingId === employee.userId}
                           className="p-3 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-2xl transition-all"
+                          title="Reset Password"
                         >
                           {resettingId === employee.userId ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -493,6 +617,7 @@ export default function EmployeesPage() {
                             navigate(`/admin/employees/edit/${employee.userId}`)
                           }
                           className="p-3 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+                          title="Edit Profile"
                         >
                           <Edit className="size-4" />
                         </button>

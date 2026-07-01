@@ -12,6 +12,27 @@ const eventBus = require("../../../core/eventBus");
 class LeadService {
 
     async createLead(data) {
+        let assignedEmployee = data.assignedEmployee || null;
+
+        if (!assignedEmployee) {
+            try {
+                const settingsService = require("../../settings/service/settings.service");
+                const settings = await settingsService.getSettings();
+                if (settings?.general?.autoLeadAssignment) {
+                    const employeesRes = await userService.getUsers({ role: "employee", isActive: true, limit: 1000 });
+                    const employees = employeesRes.data || [];
+                    if (employees.length > 0) {
+                        const leadAssignmentService = require("./leadAssignment.service");
+                        const selectedEmployee = leadAssignmentService.assignLead(employees);
+                        if (selectedEmployee) {
+                            assignedEmployee = selectedEmployee.userId;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error in auto lead assignment:", err);
+            }
+        }
 
         const lead = await leadRepo.createLead({
 
@@ -33,8 +54,8 @@ class LeadService {
             source: data.source || "direct",
             leadType: data.leadType || "customer_applied",
             documents: data.documents || [],
-            assignedEmployee: data.assignedEmployee || null,
-            status: data.assignedEmployee ? "assigned" : "new"
+            assignedEmployee,
+            status: assignedEmployee ? "assigned" : "new"
 
         });
 
@@ -42,7 +63,7 @@ class LeadService {
             await leadRepo.addNote({
                 leadId: lead.leadId,
                 note: data.note,
-                employeeId: data.assignedEmployee || "SYSTEM",
+                employeeId: assignedEmployee || "SYSTEM",
                 callOutcome: "interested"
             });
         }
@@ -118,6 +139,36 @@ class LeadService {
         const { skip, limit, page } = pagination(query);
 
         const baseFilter = filtering(query);
+
+        // Handle text search
+        if (baseFilter.search) {
+            baseFilter.$or = [
+                { customerName: { $regex: baseFilter.search, $options: "i" } },
+                { email: { $regex: baseFilter.search, $options: "i" } },
+                { phone: { $regex: baseFilter.search, $options: "i" } },
+                { leadId: baseFilter.search }
+            ];
+            delete baseFilter.search;
+        }
+
+        // Handle assignment status mapping
+        if (baseFilter.assignment === "assigned") {
+            baseFilter.assignedEmployee = { $ne: null };
+            delete baseFilter.assignment;
+        } else if (baseFilter.assignment === "unassigned") {
+            baseFilter.assignedEmployee = null;
+            delete baseFilter.assignment;
+        }
+
+        // Handle cases where Axios passes empty objects due to sanitization stripping '$ne'
+        if (baseFilter.assignedEmployee && typeof baseFilter.assignedEmployee === "object" && Object.keys(baseFilter.assignedEmployee).length === 0) {
+            delete baseFilter.assignedEmployee;
+        }
+
+        // Map status: "new" for employees to match both "new" and "assigned" leads
+        if (securityFilter.assignedEmployee && baseFilter.status === "new") {
+            baseFilter.status = { $in: ["new", "assigned"] };
+        }
 
         if (baseFilter.leadType === "cold_calling") {
             baseFilter.leadType = "cold_calling";
@@ -249,6 +300,22 @@ class LeadService {
         const createdLeads = [];
         const seenPhones = new Set();
         
+        let autoAssign = false;
+        let employees = [];
+        try {
+            const settingsService = require("../../settings/service/settings.service");
+            const settings = await settingsService.getSettings();
+            if (settings?.general?.autoLeadAssignment) {
+                autoAssign = true;
+                const employeesRes = await userService.getUsers({ role: "employee", isActive: true, limit: 1000 });
+                employees = employeesRes.data || [];
+            }
+        } catch (err) {
+            console.error("Error reading settings for bulk lead creation:", err);
+        }
+
+        const leadAssignmentService = require("./leadAssignment.service");
+
         for (const data of leadsData) {
             if (!data.phone) continue;
             
@@ -268,6 +335,14 @@ class LeadService {
             
             const leadId = snowflake.nextId();
             
+            let assignedEmployee = data.assignedEmployee || null;
+            if (!assignedEmployee && autoAssign && employees.length > 0) {
+                const selectedEmployee = leadAssignmentService.assignLead(employees);
+                if (selectedEmployee) {
+                    assignedEmployee = selectedEmployee.userId;
+                }
+            }
+
             const lead = await leadRepo.createLead({
                 leadId,
                 customerId: null,
@@ -279,8 +354,8 @@ class LeadService {
                 productType: null,
                 source: "csv_upload",
                 leadType: "cold_calling",
-                status: data.assignedEmployee ? "assigned" : "new",
-                assignedEmployee: data.assignedEmployee || null
+                status: assignedEmployee ? "assigned" : "new",
+                assignedEmployee
             });
             
             if (data.note || data.interactionDetails || data.logDetails) {
@@ -290,7 +365,7 @@ class LeadService {
                 await leadRepo.addNote({
                     leadId,
                     note: noteText,
-                    employeeId: performerId,
+                    employeeId: assignedEmployee || performerId,
                     callOutcome: "interested"
                 });
                 
@@ -298,7 +373,7 @@ class LeadService {
                 const communicationLogService = require("./communicationLog.service");
                 await communicationLogService.createLog({
                     leadId,
-                    employeeId: performerId,
+                    employeeId: assignedEmployee || performerId,
                     type: "remark",
                     outcome: "interested",
                     content: noteText,

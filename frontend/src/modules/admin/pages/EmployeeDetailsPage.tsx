@@ -12,12 +12,16 @@ import {
   ChevronRight, 
   XCircle, 
   Search, 
-  FileText
+  FileText,
+  UserPlus,
+  Edit,
+  Award
 } from 'lucide-react';
 import { getEmployeeByIdRequest } from '../../../api/admin.api';
-import { getLeadsRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest } from '../../../api/lead.api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
+import Pagination from '../../../components/Pagination';
 
 const getLeadStatusStyles = (status: string) => {
   switch (status?.toLowerCase()) {
@@ -52,11 +56,61 @@ export default function EmployeeDetailsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'converted' | 'rejected' | 'active'>('all');
 
+  const [unassignedLeads, setUnassignedLeads] = useState<any[]>([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
+  const [assigningInProgress, setAssigningInProgress] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [leadsPerPage] = useState(10);
+
   useEffect(() => {
     if (id) {
       loadData();
+      checkUnassignedLeads();
     }
   }, [id]);
+
+  const checkUnassignedLeads = async () => {
+    try {
+      const res = await getLeadsRequest({
+        assignment: 'unassigned',
+        leadType: 'cold_calling',
+        limit: 20
+      });
+      if (res.success) {
+        const leadsData = res.data?.data || res.data || [];
+        setUnassignedLeads(leadsData);
+        setUnassignedCount(res.data?.total || leadsData.length);
+      }
+    } catch (error) {
+      console.error("Failed to check unassigned cold calling leads:", error);
+    }
+  };
+
+  const handleQuickAssign = async () => {
+    if (!id || unassignedLeads.length === 0) return;
+    
+    try {
+      setAssigningInProgress(true);
+      const leadIdsToAssign = unassignedLeads.slice(0, 20).map(lead => lead.leadId);
+      
+      const res = await bulkAssignLeadsRequest(leadIdsToAssign, id);
+      if (res.success) {
+        toast.success(`Successfully assigned ${leadIdsToAssign.length} cold calling leads`);
+        await Promise.all([
+          loadData(),
+          checkUnassignedLeads()
+        ]);
+      } else {
+        toast.error(res.message || "Failed to assign leads");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to assign leads");
+    } finally {
+      setAssigningInProgress(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -120,6 +174,11 @@ export default function EmployeeDetailsPage() {
     });
   }, [leads, activeTab, searchQuery]);
 
+  const paginatedLeads = useMemo(() => {
+    const startIndex = (currentPage - 1) * leadsPerPage;
+    return filteredLeads.slice(startIndex, startIndex + leadsPerPage);
+  }, [filteredLeads, currentPage, leadsPerPage]);
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -147,17 +206,42 @@ export default function EmployeeDetailsPage() {
   return (
     <main className="p-4 lg:p-6 max-w-7xl mx-auto space-y-6 lg:space-y-8 pb-12">
       {/* Navigation Header */}
-      <div className="flex items-center gap-3">
-        <button 
-          onClick={() => navigate('/admin/employees')}
-          className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
-        >
-          <ArrowLeft className="size-4" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white leading-none">Personnel Details</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Operational view and assigned leads history</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/admin/employees')}
+            className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+          >
+            <ArrowLeft className="size-4" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white leading-none">Personnel Details</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Operational view and assigned leads history</p>
+          </div>
         </div>
+        
+        {/* Quick Assign 20 Cold Calling Leads */}
+        <button
+          onClick={handleQuickAssign}
+          disabled={unassignedCount === 0 || assigningInProgress}
+          className={`flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
+            unassignedCount > 0 
+              ? "bg-primary text-white hover:bg-primary/95 shadow-md shadow-primary/25 cursor-pointer hover:scale-[1.02] active:scale-[0.98]" 
+              : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-200/50 dark:border-slate-700/50 cursor-not-allowed"
+          }`}
+        >
+          {assigningInProgress ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              <span>Assigning Leads...</span>
+            </>
+          ) : (
+            <>
+              <UserPlus className="size-4" />
+              <span>Quick Assign 20 Cold Leads ({unassignedCount} available)</span>
+            </>
+          )}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -195,42 +279,75 @@ export default function EmployeeDetailsPage() {
               <span>Joined {new Date(employee.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>
+
+          {/* Performance Index (Conversion Rate) */}
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><Award className="size-3.5 text-amber-500" /> Success Rate</span>
+              <span className="text-emerald-500 font-black">{stats.successRate}</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+              <div 
+                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: stats.successRate }}
+              />
+            </div>
+            <p className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">
+              {stats.converted} of {stats.total} leads converted
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate(`/admin/employees/edit/${employee.userId}`)}
+            className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-slate-850 dark:hover:bg-slate-50 shadow-sm mt-4 border border-transparent dark:border-slate-200"
+          >
+            <Edit className="size-3.5" /> Edit Profile dossier
+          </button>
         </div>
 
         {/* Metrics & Leads List */}
         <div className="lg:col-span-2 space-y-6 lg:space-y-8">
           {/* Dynamic Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
                   <Target className="size-4" />
                 </div>
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Leads</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Leads</p>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{stats.total}</h3>
+              <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-wider">
+                {stats.active} active lead pipeline
+              </p>
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-transparent rounded-bl-full pointer-events-none" />
             </div>
             
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
                   <CheckCircle2 className="size-4" />
                 </div>
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Conversions</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Conversions</p>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.converted}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{stats.converted}</h3>
+              <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 mt-2 uppercase tracking-wider">
+                Successful conversions
+              </p>
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-bl-full pointer-events-none" />
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl">
                   <TrendingUp className="size-4" />
                 </div>
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Conversion Rate</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Conversion Rate</p>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.successRate}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{stats.successRate}</h3>
+              <p className="text-[9px] font-bold text-purple-600 dark:text-purple-400 mt-2 uppercase tracking-wider">
+                Industry Average: ~45.0%
+              </p>
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/5 to-transparent rounded-bl-full pointer-events-none" />
             </div>
           </div>
@@ -249,39 +366,49 @@ export default function EmployeeDetailsPage() {
                     type="text"
                     placeholder="Filter leads..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 rounded-lg py-1.5 pl-9 pr-4 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all placeholder:opacity-50"
                   />
                 </div>
               </div>
 
               {/* Filtering tabs */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-850">
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 {[
-                  { id: 'all', label: 'All Leads', count: stats.total },
-                  { id: 'converted', label: 'Converted', count: stats.converted, color: 'text-emerald-600 bg-emerald-500/5 border-emerald-500/10' },
-                  { id: 'rejected', label: 'Rejected', count: stats.rejected, color: 'text-rose-600 bg-rose-500/5 border-rose-500/10' },
-                  { id: 'active', label: 'Active', count: stats.active, color: 'text-blue-600 bg-blue-500/5 border-blue-500/10' }
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${
-                      activeTab === t.id 
-                        ? 'bg-primary border-primary text-white shadow-sm' 
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {t.label}
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      activeTab === t.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}>
-                      {t.count}
-                    </span>
-                  </button>
-                ))}
+                  { id: 'all', label: 'All Leads', count: stats.total, icon: FileText },
+                  { id: 'converted', label: 'Converted', count: stats.converted, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
+                  { id: 'rejected', label: 'Rejected', count: stats.rejected, icon: XCircle, color: 'text-rose-600 dark:text-rose-400 bg-rose-500/5 border-rose-500/10' },
+                  { id: 'active', label: 'Active', count: stats.active, icon: Target, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/5 border-blue-500/10' }
+                ].map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                      setActiveTab(t.id as any);
+                      setCurrentPage(1);
+                    }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-2 ${
+                        activeTab === t.id 
+                          ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Icon className="size-3.5 shrink-0" />
+                      <span>{t.label}</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        activeTab === t.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {t.count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -300,7 +427,7 @@ export default function EmployeeDetailsPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-800/40">
                     <AnimatePresence mode="popLayout">
-                      {filteredLeads.map((lead) => (
+                      {paginatedLeads.map((lead) => (
                         <motion.tr 
                           key={lead.leadId}
                           layout
@@ -314,7 +441,7 @@ export default function EmployeeDetailsPage() {
                             <div className="text-[10px] font-medium text-slate-500 mt-0.5">{lead.phone}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700/50">
                               {lead.loanType || lead.productType || 'Cold Calling'}
                             </span>
                           </td>
@@ -346,6 +473,17 @@ export default function EmployeeDetailsPage() {
                 </div>
               )}
             </div>
+
+            {filteredLeads.length > leadsPerPage && (
+              <div className="p-4 border-t border-slate-100 dark:border-slate-850">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPage={Math.ceil(filteredLeads.length / leadsPerPage)}
+                  isLoading={loading}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

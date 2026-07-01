@@ -103,11 +103,9 @@ export default function LeadsPage() {
         search: debouncedSearch || undefined,
         status: filters.status !== 'all' ? filters.status : undefined,
         loanType: filters.serviceType !== 'all' ? filters.serviceType : undefined,
-        leadType: activeTab === 'applied' ? 'customer_applied' : 'cold_calling'
+        leadType: activeTab === 'applied' ? 'customer_applied' : 'cold_calling',
+        assignment: filters.assignment !== 'all' ? filters.assignment : undefined
       };
-
-      if (filters.assignment === 'assigned') params.assignedEmployee = { $ne: null };
-      if (filters.assignment === 'unassigned') params.assignedEmployee = null;
 
       const res = await getLeadsRequest(params);
       

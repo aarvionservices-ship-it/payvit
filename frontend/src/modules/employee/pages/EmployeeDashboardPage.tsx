@@ -65,7 +65,7 @@ export default function EmployeeDashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await getLeadsRequest();
+        const res = await getLeadsRequest({ limit: 10000 });
         if (res.success && res.data) {
           const leadsData = res.data?.data || (Array.isArray(res.data) ? res.data : []);
           setLeads(leadsData);

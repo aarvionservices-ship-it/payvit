@@ -376,6 +376,23 @@ class LeadController {
         }
     }
 
+    async quickCreateUnassignedLeads(req, res) {
+        try {
+            const leads = await leadService.createQuickUnassignedLeads();
+            res.json({
+                success: true,
+                message: "Successfully created 20 unassigned leads",
+                data: leads
+            });
+        } catch (error) {
+            console.error("Error creating quick unassigned leads:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to create quick unassigned leads: " + error.message
+            });
+        }
+    }
+
 }
 
 module.exports = new LeadController();

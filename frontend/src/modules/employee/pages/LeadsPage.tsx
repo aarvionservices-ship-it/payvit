@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { getLeadsRequest } from '../../../api/lead.api';
 import { toast } from 'react-hot-toast';
+import Pagination from '../../../components/Pagination';
 
 const getStatusStyles = (type: string) => {
   switch (type?.toLowerCase()) {
@@ -54,18 +55,42 @@ export default function LeadsPage() {
     status: 'all',
     type: 'all'
   });
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const [limit] = useState(10);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filters.status, filters.type]);
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [currentPage, debouncedSearch, filters.status, filters.type]);
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await getLeadsRequest();
+      const params: any = {
+        page: currentPage,
+        limit,
+        search: debouncedSearch || undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        loanType: filters.type !== 'all' ? filters.type : undefined
+      };
+      const response = await getLeadsRequest(params);
       if (response && response.success) {
         const leadsData = response.data?.data || (Array.isArray(response.data) ? response.data : []);
         setLeads(leadsData);
+        setTotalLeads(response.data?.total || 0);
       }
     } catch (error) {
       toast.error('Failed to fetch leads');
@@ -74,17 +99,7 @@ export default function LeadsPage() {
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
-    const searchMatch = !filters.search || 
-      lead.customerName?.toLowerCase().includes(filters.search.toLowerCase()) || 
-      lead.phone?.toLowerCase().includes(filters.search.toLowerCase());
-    
-    const statusMatch = filters.status === 'all' || lead.status?.toLowerCase() === filters.status.toLowerCase();
-    
-    const typeMatch = filters.type === 'all' || lead.loanType?.toLowerCase() === filters.type.toLowerCase();
-
-    return searchMatch && statusMatch && typeMatch;
-  });
+  const filteredLeads = leads;
 
   const activeFilterCount = (filters.status !== 'all' ? 1 : 0) + (filters.type !== 'all' ? 1 : 0);
 
@@ -334,6 +349,13 @@ export default function LeadsPage() {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPage={Math.ceil(totalLeads / limit)}
+            onPageChange={setCurrentPage}
+            isLoading={loading}
+          />
         </>
       )}
     </div>
