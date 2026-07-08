@@ -5,7 +5,6 @@ import {
   Filter,
   Download,
   Mail,
-  MoreVertical,
   Star,
   UserMinus,
   Edit,
@@ -22,12 +21,6 @@ import {
 } from "../../../api/admin.api";
 import { toast } from "react-hot-toast";
 import Pagination from "../../../components/Pagination";
-
-const getStatusStyles = (isActive: boolean) => {
-  if (isActive)
-    return "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
-  return "bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20";
-};
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<any[]>([]);

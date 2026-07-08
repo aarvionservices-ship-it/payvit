@@ -6,7 +6,6 @@ import {
   Plus, 
   Trash2, 
   ShieldCheck, 
-  RefreshCw,
   Layout,
   MessageSquare,
   Loader2

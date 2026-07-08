@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   ShieldCheck,
-  User,
   Quote
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
