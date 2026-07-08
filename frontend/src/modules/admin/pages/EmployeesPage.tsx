@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   getEmployeesRequest,
   resetEmployeePasswordRequest,
+  updateEmployeeRequest,
 } from "../../../api/admin.api";
 import { toast } from "react-hot-toast";
 import Pagination from "../../../components/Pagination";
@@ -110,48 +111,95 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const action = currentStatus ? "deactivate" : "activate";
+    if (!window.confirm(`Are you sure you want to ${action} this employee?`)) return;
+
+    try {
+      const res = await updateEmployeeRequest(id, { isActive: !currentStatus });
+      if (res.success) {
+        toast.success(`Employee ${currentStatus ? "deactivated" : "activated"} successfully`);
+        fetchEmployees();
+      } else {
+        toast.error(res.message || `Failed to ${action} employee`);
+      }
+    } catch (error) {
+      toast.error(`Failed to ${action} employee`);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (employees.length === 0) {
+      toast.error("No employees to export");
+      return;
+    }
+    const headers = ["Employee ID", "Name", "Email", "Phone", "Role", "Active", "Total Leads", "Converted", "Rejected"];
+    const csvRows = [
+      headers.join(","),
+      ...employees.map(emp => [
+        emp.userId,
+        `"${emp.name.replace(/"/g, '""')}"`,
+        emp.email,
+        emp.phone || "",
+        emp.role,
+        emp.isActive ? "Yes" : "No",
+        emp.leadsCount || 0,
+        emp.convertedCount || 0,
+        emp.rejectedCount || 0
+      ].join(","))
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `employees_export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="px-4 lg:px-0 space-y-6 lg:space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">
-            Workforce Index
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Employees
           </h1>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.4em] mt-1">
-            Management of Human Capital Assets
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Manage organization members, track leads pipelines, and edit profiles.
           </p>
         </div>
         <Link
           to="/admin/employees/register"
-          className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 group"
+          className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-500/10 group"
         >
-          <Plus className="size-4 group-hover:rotate-90 transition-transform" />{" "}
-          Register Personnel
+          <Plus className="size-4 group-hover:scale-110 transition-transform" />
+          Add Employee
         </Link>
       </div>
 
       {/* Control Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/80 p-3 shadow-sm flex flex-col lg:flex-row gap-3 items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800/80 p-3 shadow-sm flex flex-col lg:flex-row gap-3 items-center justify-between">
         <div className="relative w-full lg:max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search employees..."
+            placeholder="Search employees by name, email or ID..."
             value={filters.search}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
-            className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-4 pl-14 pr-6 text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-primary/10 transition-all placeholder:opacity-50"
+            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto relative">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex-1 lg:flex-none px-6 py-4 border rounded-2xl transition-all relative flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest ${showFilters ? "bg-primary text-white border-primary shadow-xl shadow-primary/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+            className={`flex-1 lg:flex-none px-4 py-2.5 border rounded-xl transition-all relative flex items-center justify-center gap-2 font-semibold text-sm ${showFilters ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/10" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
           >
             <Filter className="size-4" /> Filter Index
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 size-5 bg-rose-500 text-white text-[9px] flex items-center justify-center rounded-full border-2 border-white dark:border-slate-950 font-bold">
+              <span className="absolute -top-1.5 -right-1.5 size-5 bg-rose-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white dark:border-slate-950 font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -173,24 +221,24 @@ export default function EmployeesPage() {
                   initial={{ opacity: 0, y: 15, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 15, scale: 0.98 }}
-                  className="fixed lg:absolute bottom-0 lg:bottom-auto lg:top-full left-0 right-0 lg:left-auto lg:right-0 mt-0 lg:mt-2.5 w-full lg:w-72 bg-white dark:bg-slate-900 border-t lg:border border-slate-100 dark:border-slate-800/80 rounded-t-2xl lg:rounded-2xl shadow-xl z-[100] p-5 overflow-hidden"
+                  className="fixed lg:absolute bottom-0 lg:bottom-auto lg:top-full left-0 right-0 lg:left-auto lg:right-0 mt-0 lg:mt-2.5 w-full lg:w-72 bg-white dark:bg-slate-900 border-t lg:border border-slate-200 dark:border-slate-800/80 rounded-t-2xl lg:rounded-2xl shadow-xl z-[100] p-5 overflow-hidden"
                 >
                   <div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6 lg:hidden" />
 
                   <div className="space-y-5 lg:space-y-4">
                     {/* Status Category */}
                     <div>
-                      <div className="px-1 pb-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 dark:border-slate-800 mb-3">
-                        Security Status
+                      <div className="px-1 pb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-3">
+                        Status
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["active", "inactive"] as const).map((status) => (
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(["all", "active", "inactive"] as const).map((status) => (
                           <button
                             key={status}
                             onClick={() =>
                               setFilters((prev) => ({ ...prev, status }))
                             }
-                            className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${filters.status === status ? "bg-primary text-white shadow-md" : "bg-slate-50 dark:bg-slate-800/50 text-slate-400"}`}
+                            className={`px-2 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all text-center ${filters.status === status ? "bg-blue-600 text-white shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"}`}
                           >
                             {status}
                           </button>
@@ -200,14 +248,14 @@ export default function EmployeesPage() {
 
                     {/* Assignment Status */}
                     <div>
-                      <div className="px-1 pb-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 dark:border-slate-800 mb-3">
-                        Workload Logic
+                      <div className="px-1 pb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-3">
+                        Leads Assigned Status
                       </div>
                       <div className="grid grid-cols-1 gap-1.5">
                         {[
-                          { id: "all", label: "Unified Force" },
-                          { id: "active", label: "Active Assignees" },
-                          { id: "none", label: "Unallocated Bench" },
+                          { id: "all", label: "All Employees" },
+                          { id: "active", label: "With Assigned Leads" },
+                          { id: "none", label: "No Assigned Leads" },
                         ].map((opt) => (
                           <button
                             key={opt.id}
@@ -217,18 +265,18 @@ export default function EmployeesPage() {
                                 hasLeads: opt.id as any,
                               }))
                             }
-                            className={`w-full text-left px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${filters.hasLeads === opt.id ? "bg-indigo-500/10 text-indigo-500" : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400"}`}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-between ${filters.hasLeads === opt.id ? "bg-blue-500/10 text-blue-600" : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"}`}
                           >
                             {opt.label}
                             <div
-                              className={`size-1 rounded-full ${filters.hasLeads === opt.id ? "bg-indigo-500 animate-pulse" : "bg-slate-200"}`}
+                              className={`size-1.5 rounded-full ${filters.hasLeads === opt.id ? "bg-blue-500 animate-pulse" : "bg-slate-200"}`}
                             />
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                    <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                       <button
                         onClick={() => {
                           setFilters({
@@ -239,15 +287,15 @@ export default function EmployeesPage() {
                           setCurrentPage(1);
                           setShowFilters(false);
                         }}
-                        className="text-[8px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-[0.2em] transition-colors"
+                        className="text-xs font-semibold text-slate-500 hover:text-rose-500 transition-colors"
                       >
-                        Reset Index
+                        Reset Filters
                       </button>
                       <button
                         onClick={() => setShowFilters(false)}
-                        className="bg-primary text-white px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm"
                       >
-                        Apply Logic
+                        Apply Filters
                       </button>
                     </div>
                   </div>
@@ -256,7 +304,11 @@ export default function EmployeesPage() {
             )}
           </AnimatePresence>
 
-          <button className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary transition-all shadow-sm">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center size-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all shadow-sm"
+            title="Export to CSV"
+          >
             <Download className="size-4.5" />
           </button>
         </div>
@@ -264,7 +316,7 @@ export default function EmployeesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="size-8 animate-spin text-primary" />
+          <Loader2 className="size-8 animate-spin text-blue-600" />
         </div>
       ) : (
         <>
@@ -277,14 +329,13 @@ export default function EmployeesPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow"
                 >
-                  {/* Floating Action Menu (Mobile) */}
-                  <div className="flex items-start justify-between gap-4 mb-5">
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3">
                       <Link
                         to={`/admin/employees/${employee.userId}`}
-                        className="size-14 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-sm border border-white dark:border-slate-800 shadow-lg hover:scale-105 transition-transform overflow-hidden relative shrink-0"
+                        className="size-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center font-bold text-sm border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative shrink-0"
                       >
                         {employee.profileImage ? (
                           <img
@@ -296,74 +347,55 @@ export default function EmployeesPage() {
                           getInitials(employee.name)
                         )}
                         <div
-                          className={`absolute bottom-0 right-0 size-3 border-2 border-white dark:border-slate-900 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
+                          className={`absolute bottom-0 right-0 size-2.5 border-2 border-white dark:border-slate-900 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
                         />
                       </Link>
                       <div className="w-40 overflow-hidden">
                         <Link
                           to={`/admin/employees/${employee.userId}`}
                           title={employee.name}
-                          className="text-base font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight truncate hover:text-primary transition-colors block"
+                          className="text-sm font-semibold text-slate-900 dark:text-white leading-tight hover:text-blue-600 transition-colors block truncate"
                         >
                           {employee.name}
                         </Link>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                            {employee.role}
-                          </span>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                          <span className="capitalize">{employee.role}</span>
                           <span className="size-1 bg-slate-300 dark:bg-slate-700 rounded-full" />
-                          <span className="text-[9px] font-black text-primary uppercase tracking-widest">
-                            ID: {employee.userId.slice(-6)}
-                          </span>
+                          <span>ID: {employee.userId.slice(-6)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
-                        Total Leads
-                      </span>
-                      <span className="text-xs font-black text-slate-900 dark:text-white">
-                        {employee.leadsCount || 0}
-                      </span>
+                  <div className="grid grid-cols-3 gap-2 my-3 text-center">
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Leads</span>
+                      <span className="text-xs font-semibold text-slate-900 dark:text-white">{employee.leadsCount || 0}</span>
                     </div>
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
-                        Rating
-                      </span>
-                      <div className="flex gap-1 items-center justify-center">
-                        <Star className="size-2.5 fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-black text-slate-900 dark:text-white">
-                          4.9
-                        </span>
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Rating</span>
+                      <div className="flex gap-1 items-center justify-center text-xs font-semibold text-slate-900 dark:text-white">
+                        <Star className="size-3 fill-amber-400 text-amber-400" />
+                        <span>4.9</span>
                       </div>
                     </div>
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center flex flex-col justify-between">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-1">
-                        Status
-                      </span>
-                      <span
-                        className={`text-[8px] font-black uppercase ${employee.isActive ? "text-emerald-500" : "text-slate-400"}`}
-                      >
-                        {employee.isActive ? "Active" : "Locked"}
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Status</span>
+                      <span className={`text-xs font-semibold ${employee.isActive ? "text-emerald-600" : "text-slate-500"}`}>
+                        {employee.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Lead Breakdown (Green, Red, Blue) */}
-                  <div className="mb-5 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/60 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.15em]">Lead Pipeline</span>
-                      <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">
-                        Total: {employee.leadsCount || 0}
-                      </span>
+                  {/* Lead Pipeline Visual representation */}
+                  <div className="mb-4 bg-slate-50/50 dark:bg-slate-800/10 rounded-xl border border-slate-100 dark:border-slate-800/50 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5 text-[11px] font-medium text-slate-500">
+                      <span>Pipeline</span>
+                      <span className="text-slate-400">Total: {employee.leadsCount || 0}</span>
                     </div>
                     
-                    {/* Stacked Proportional Bar */}
                     {employee.leadsCount > 0 ? (
-                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex mb-3">
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex mb-2.5">
                         <div
                           className="h-full bg-emerald-500 transition-all"
                           style={{
@@ -376,7 +408,7 @@ export default function EmployeesPage() {
                           style={{
                             width: `${((Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))) / employee.leadsCount) * 100}%`,
                           }}
-                          title={`Normal: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
+                          title={`Active: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
                         />
                         <div
                           className="h-full bg-rose-500 transition-all"
@@ -387,33 +419,27 @@ export default function EmployeesPage() {
                         />
                       </div>
                     ) : (
-                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-3" />
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mb-2.5" />
                     )}
 
-                    {/* Numeric breakdown values */}
-                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
-                      <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 py-1 px-1.5 rounded-lg border border-emerald-100/50 dark:border-emerald-500/20">
-                        <div className="text-[8px] font-black uppercase opacity-75">Converted</div>
-                        <div className="text-xs font-black">{employee.convertedCount || 0}</div>
+                    <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] text-slate-500">
+                      <div>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{employee.convertedCount || 0}</span> Converted
                       </div>
-                      <div className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 py-1 px-1.5 rounded-lg border border-blue-100/50 dark:border-blue-500/20">
-                        <div className="text-[8px] font-black uppercase opacity-75">Normal</div>
-                        <div className="text-xs font-black">
+                      <div>
+                        <span className="text-blue-600 dark:text-blue-400 font-semibold">
                           {Math.max(0, (employee.leadsCount || 0) - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}
-                        </div>
+                        </span> Active
                       </div>
-                      <div className="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 py-1 px-1.5 rounded-lg border border-rose-100/50 dark:border-rose-500/20">
-                        <div className="text-[8px] font-black uppercase opacity-75">Rejected</div>
-                        <div className="text-xs font-black">{employee.rejectedCount || 0}</div>
+                      <div>
+                        <span className="text-rose-600 dark:text-rose-400 font-semibold">{employee.rejectedCount || 0}</span> Rejected
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-800/30 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <Mail className="size-3.5 text-primary" />
-                      <span className="truncate flex-1">{employee.email}</span>
-                    </div>
+                  <div className="mb-4 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800/50 flex items-center gap-2">
+                    <Mail className="size-3.5 text-slate-400" />
+                    <span className="truncate flex-1">{employee.email}</span>
                   </div>
 
                   <div className="flex gap-2">
@@ -421,15 +447,15 @@ export default function EmployeesPage() {
                       onClick={() =>
                         navigate(`/admin/employees/${employee.userId}`)
                       }
-                      className="flex-1 bg-primary text-white py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm"
                     >
-                      <Eye className="size-3.5" /> Details
+                      <Eye className="size-3.5" /> View
                     </button>
                     <button
                       onClick={() =>
                         navigate(`/admin/employees/edit/${employee.userId}`)
                       }
-                      className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 rounded-xl text-xs font-semibold transition-all"
                     >
                       Edit
                     </button>
@@ -438,20 +464,25 @@ export default function EmployeesPage() {
                         handleResetPassword(employee.userId, employee.name)
                       }
                       disabled={resettingId === employee.userId}
-                      className="size-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-500 transition-all disabled:opacity-50 border border-slate-100 dark:border-slate-800"
+                      className="size-9 bg-slate-50 hover:bg-amber-50 dark:bg-slate-800/50 dark:hover:bg-amber-950/20 text-slate-500 hover:text-amber-600 rounded-xl flex items-center justify-center transition-all border border-slate-200/60 dark:border-slate-700 disabled:opacity-50"
                       title="Reset Password"
                     >
                       {resettingId === employee.userId ? (
-                        <Loader2 className="size-4 animate-spin" />
+                        <Loader2 className="size-3.5 animate-spin" />
                       ) : (
-                        <Key className="size-4" />
+                        <Key className="size-3.5" />
                       )}
                     </button>
                     <button
-                      className="size-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-800"
-                      title="Deactivate"
+                      onClick={() => handleToggleActive(employee.userId, employee.isActive)}
+                      className={`size-9 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center justify-center transition-all border border-slate-200/60 dark:border-slate-750 ${
+                        employee.isActive
+                          ? "text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                          : "text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      }`}
+                      title={employee.isActive ? "Deactivate" : "Activate"}
                     >
-                      <UserMinus className="size-4" />
+                      <UserMinus className="size-3.5" />
                     </button>
                   </div>
                 </motion.div>
@@ -460,28 +491,28 @@ export default function EmployeesPage() {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
+          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-6 py-4">Personnel</th>
-                  <th className="px-6 py-4">Asset Leads</th>
-                  <th className="px-6 py-4">Contact Info</th>
-                  <th className="px-6 py-4">Security status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                <tr className="bg-slate-50/70 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                  <th className="px-6 py-3.5">Employee</th>
+                  <th className="px-6 py-3.5">Leads Pipeline</th>
+                  <th className="px-6 py-3.5">Contact Information</th>
+                  <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {employees.map((employee) => (
                   <tr
                     key={employee.userId}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group"
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-3">
                         <Link
                           to={`/admin/employees/${employee.userId}`}
-                          className="size-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-xs border border-white/50 dark:border-slate-800 shadow-sm hover:scale-110 transition-transform overflow-hidden relative shrink-0"
+                          className="size-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex items-center justify-center font-bold text-sm border border-slate-100 dark:border-slate-800 shadow-sm hover:scale-105 transition-transform overflow-hidden relative shrink-0"
                         >
                           {employee.profileImage ? (
                             <img
@@ -493,54 +524,40 @@ export default function EmployeesPage() {
                             getInitials(employee.name)
                           )}
                           <div
-                            className={`absolute bottom-0 right-0 size-2.5 border-2 border-white dark:border-slate-950 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
+                            className={`absolute bottom-0 right-0 size-2.5 border-2 border-white dark:border-slate-900 rounded-full ${employee.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
                           />
                         </Link>
-                        <div className="w-40 overflow-hidden">
+                        <div>
                           <Link
                             to={`/admin/employees/${employee.userId}`}
                             title={employee.name}
-                            className="font-black text-slate-900 dark:text-white block leading-none uppercase tracking-tight truncate hover:text-primary transition-colors"
+                            className="font-semibold text-slate-900 dark:text-white block hover:text-blue-600 transition-colors text-sm"
                           >
                             {employee.name}
                           </Link>
-                          <span className="text-[9px] text-slate-400 font-black uppercase mt-1.5 block tracking-widest">
+                          <span className="text-xs text-slate-500 capitalize mt-0.5 block">
                             {employee.role}
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-2 min-w-[160px]">
-                        {/* Numeric stats pill headers */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Converted (Green) */}
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-500/10"
-                            title="Converted Leads"
-                          >
-                            {employee.convertedCount || 0}
-                          </span>
-                          {/* Normal (Blue) */}
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-100/50 dark:border-blue-500/10"
-                            title="Normal/Active Leads"
-                          >
-                            {Math.max(0, (employee.leadsCount || 0) - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}
-                          </span>
-                          {/* Rejected (Red) */}
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-100/50 dark:border-rose-500/10"
-                            title="Rejected Leads"
-                          >
-                            {employee.rejectedCount || 0}
-                          </span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase ml-auto">
-                            / {employee.leadsCount || 0} Total
+                    <td className="px-6 py-3.5">
+                      <div className="flex flex-col gap-1.5 min-w-[180px]">
+                        <div className="flex items-center justify-between text-xs font-medium">
+                          <div className="flex items-center gap-1.5 text-slate-500">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold" title="Converted">{employee.convertedCount || 0}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold" title="Active">
+                              {Math.max(0, (employee.leadsCount || 0) - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-rose-600 dark:text-rose-400 font-semibold" title="Rejected">{employee.rejectedCount || 0}</span>
+                          </div>
+                          <span className="text-slate-400 font-medium text-[11px]">
+                            {employee.leadsCount || 0} Leads
                           </span>
                         </div>
-
-                        {/* Pro Stacked Progress Bar */}
+                        
                         {employee.leadsCount > 0 ? (
                           <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
                             <div
@@ -555,7 +572,7 @@ export default function EmployeesPage() {
                               style={{
                                 width: `${((Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))) / employee.leadsCount) * 100}%`,
                               }}
-                              title={`Normal: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
+                              title={`Active: ${Math.max(0, employee.leadsCount - (employee.convertedCount || 0) - (employee.rejectedCount || 0))}`}
                             />
                             <div
                               className="h-full bg-rose-500 transition-all"
@@ -570,40 +587,45 @@ export default function EmployeesPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <span className="text-[11px] font-bold text-slate-900 dark:text-white block">
+                    <td className="px-6 py-3.5">
+                      <div className="text-sm">
+                        <span className="text-slate-950 dark:text-slate-100 block font-medium">
                           {employee.email}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 block">
-                          {employee.phone}
-                        </span>
+                        {employee.phone && (
+                          <span className="text-xs text-slate-500 block mt-0.5">
+                            {employee.phone}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3.5">
                       <span
-                        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(employee.isActive)} shadow-sm`}
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          employee.isActive
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                            : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                        }`}
                       >
-                        {employee.isActive ? "Active Mode" : "Deactivated"}
+                        <span className={`size-1.5 rounded-full mr-1.5 ${employee.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
+                        {employee.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() =>
-                            navigate(`/admin/employees/${employee.userId}`)
-                          }
-                          className="p-3 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+                    <td className="px-6 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          to={`/admin/employees/${employee.userId}`}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-all"
                           title="View Details"
                         >
                           <Eye className="size-4" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() =>
                             handleResetPassword(employee.userId, employee.name)
                           }
                           disabled={resettingId === employee.userId}
-                          className="p-3 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-2xl transition-all"
+                          className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg transition-all disabled:opacity-50"
                           title="Reset Password"
                         >
                           {resettingId === employee.userId ? (
@@ -612,17 +634,23 @@ export default function EmployeesPage() {
                             <Key className="size-4" />
                           )}
                         </button>
-                        <button
-                          onClick={() =>
-                            navigate(`/admin/employees/edit/${employee.userId}`)
-                          }
-                          className="p-3 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all"
+                        <Link
+                          to={`/admin/employees/edit/${employee.userId}`}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-all"
                           title="Edit Profile"
                         >
                           <Edit className="size-4" />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all">
-                          <MoreVertical className="size-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleToggleActive(employee.userId, employee.isActive)}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            employee.isActive
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                              : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                          }`}
+                          title={employee.isActive ? "Deactivate Employee" : "Activate Employee"}
+                        >
+                          <UserMinus className="size-4" />
                         </button>
                       </div>
                     </td>

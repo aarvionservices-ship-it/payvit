@@ -53,7 +53,8 @@ export default function LeadsPage() {
     search: "",
     status: "all",
     assignment: "all" as "all" | "assigned" | "unassigned",
-    serviceType: "all"
+    serviceType: "all",
+    assignedEmployee: "all"
   });
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -79,7 +80,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     fetchLeads();
-  }, [currentPage, debouncedSearch, filters.status, filters.assignment, filters.serviceType, activeTab]);
+  }, [currentPage, debouncedSearch, filters.status, filters.assignment, filters.serviceType, filters.assignedEmployee, activeTab]);
 
   useEffect(() => {
     fetchEmployees();
@@ -104,7 +105,8 @@ export default function LeadsPage() {
         status: filters.status !== 'all' ? filters.status : undefined,
         loanType: filters.serviceType !== 'all' ? filters.serviceType : undefined,
         leadType: activeTab === 'applied' ? 'customer_applied' : 'cold_calling',
-        assignment: filters.assignment !== 'all' ? filters.assignment : undefined
+        assignment: filters.assignment !== 'all' ? filters.assignment : undefined,
+        assignedEmployee: filters.assignedEmployee !== 'all' ? filters.assignedEmployee : undefined
       };
 
       const res = await getLeadsRequest(params);
@@ -120,7 +122,7 @@ export default function LeadsPage() {
     }
   };
 
-  const fetchData = fetchLeads; // Alias for backward compatibility if needed
+  const fetchData = fetchLeads; 
 
   const handleBulkAssign = async (employeeId: string) => {
     try {
@@ -129,13 +131,13 @@ export default function LeadsPage() {
       const res = await bulkAssignLeadsRequest(leadIds, employeeId);
       
       if (res.success) {
-        toast.success(`Leads successfully synchronized to agent protocol`);
+        toast.success(`Leads successfully assigned to agent`);
         setSelectedLeads([]);
         setShowAssignModal(null);
         fetchData();
       }
     } catch (error) {
-      toast.error("Encryption handshake failed during assignment");
+      toast.error("Handshake failed during assignment");
     } finally {
       setAssigning(false);
     }
@@ -189,7 +191,6 @@ export default function LeadsPage() {
             setFile(null);
             fetchLeads();
             
-            // Periodically refresh the data over the next few seconds to display leads as they finish importing
             const intervals = [1000, 3000, 6000];
             intervals.forEach(delay => {
               setTimeout(() => {
@@ -220,13 +221,13 @@ export default function LeadsPage() {
     <div className="space-y-6 lg:space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-955 dark:text-white">Leads Acquisition</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-905 dark:text-white">Leads Acquisition</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Monitor, assign, and track customer applied and cold calling leads</p>
         </div>
         {activeTab === 'cold_calling' && (
           <button
             onClick={() => setShowUploadModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white transition-all rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-950 dark:bg-white text-white dark:text-slate-955 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white transition-all rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
           >
             <Upload className="size-4" /> Upload Leads List
           </button>
@@ -286,7 +287,7 @@ export default function LeadsPage() {
             placeholder="Search leads by name or phone..."
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-xl py-2 pl-11 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all text-slate-700 dark:text-slate-200 placeholder:opacity-50"
+            className="w-full bg-slate-50 dark:bg-slate-85 border border-slate-200/50 dark:border-slate-700/50 rounded-xl py-2 pl-11 pr-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all text-slate-707 dark:text-slate-200 placeholder:opacity-50"
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto relative">
@@ -319,29 +320,30 @@ export default function LeadsPage() {
                   exit={{ opacity: 0, y: 20, scale: 0.95 }}
                   className="fixed lg:absolute bottom-0 lg:bottom-auto lg:top-full left-0 right-0 lg:left-auto lg:right-0 mt-0 lg:mt-4 w-full lg:w-72 bg-white dark:bg-slate-900 border-t lg:border border-slate-200 dark:border-slate-800 rounded-t-[2.5rem] lg:rounded-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.1),0_20px_50px_rgba(0,0,0,0.1)] z-[100] p-6 lg:p-5 space-y-5 lg:space-y-4"
                 >
-                  <div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-2 lg:hidden" />
+                  <div className="w-12 h-1 bg-slate-205 dark:bg-slate-800 rounded-full mx-auto mb-2 lg:hidden" />
                   
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2 px-1">Assignment Status</label>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Assignment Status</label>
                     <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                       {['all', 'assigned', 'unassigned'].map((val) => (
                         <button
                           key={val}
+                          type="button"
                           onClick={() => setFilters(prev => ({ ...prev, assignment: val as any }))}
-                          className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filters.assignment === val ? 'bg-primary text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500'}`}
+                          className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filters.assignment === val ? 'bg-primary text-white shadow-md' : 'bg-slate-55 dark:bg-slate-800/50 text-slate-555 hover:text-slate-700'}`}
                         >
-                          {val === 'all' ? 'Unified' : val}
+                          {val === 'all' ? 'All Leads' : val}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2 px-1">Lifecycle State</label>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Lifecycle State</label>
                     <select 
                       value={filters.status}
                       onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer capitalize"
                     >
                       <option value="all">All Channels</option>
                       <option value="new">New Entry</option>
@@ -356,11 +358,25 @@ export default function LeadsPage() {
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2 px-1">Service Logic</label>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Assigned Custodian</label>
+                    <select 
+                      value={filters.assignedEmployee}
+                      onChange={(e) => setFilters(prev => ({ ...prev, assignedEmployee: e.target.value }))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                    >
+                      <option value="all">All Custodians</option>
+                      {employees.filter(e => e.isActive).map(emp => (
+                        <option key={emp.userId} value={emp.userId}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Service Logic</label>
                     <select 
                       value={filters.serviceType}
                       onChange={(e) => setFilters(prev => ({ ...prev, serviceType: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
                     >
                       <option value="all">Any Portfolio</option>
                       <option value="personal">Personal Loan</option>
@@ -373,17 +389,17 @@ export default function LeadsPage() {
                   <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                     <button 
                       onClick={() => {
-                        setFilters({ search: "", status: "all", assignment: "all", serviceType: "all" });
+                        setFilters({ search: "", status: "all", assignment: "all", serviceType: "all", assignedEmployee: "all" });
                         setCurrentPage(1);
                         setShowFilters(false);
                       }}
-                      className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em] px-2 hover:opacity-70 transition-all"
+                      className="text-xs font-semibold text-rose-505 px-2 hover:opacity-70 transition-all cursor-pointer"
                     >
                       Clear All
                     </button>
                     <button 
                       onClick={() => setShowFilters(false)}
-                      className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 lg:hidden"
+                      className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2 rounded-xl text-xs font-semibold shadow-md lg:hidden cursor-pointer"
                     >
                       Apply
                     </button>
@@ -410,18 +426,14 @@ export default function LeadsPage() {
                 const assignedEmp = employeesMap[lead.assignedEmployee];
                 
                 return (
-                  <motion.div
+                  <div
                     key={lead.leadId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.15 }}
                     onClick={() => toggleSelectLead(lead.leadId)}
-                    className={`bg-white dark:bg-slate-900 p-5 rounded-2xl border transition-all relative overflow-hidden group active:scale-[0.99] ${selectedLeads.includes(lead.leadId) ? 'border-primary ring-2 ring-primary/10 shadow-md' : 'border-slate-100 dark:border-slate-800/80 shadow-sm'}`}
+                    className={`bg-white dark:bg-slate-900 p-5 rounded-2xl border transition-all relative overflow-hidden group active:scale-[0.99] ${selectedLeads.includes(lead.leadId) ? 'border-primary ring-2 ring-primary/10 shadow-md' : 'border-slate-105 dark:border-slate-808/80 shadow-sm'}`}
                   >
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center gap-4">
-                        <div className={`size-14 rounded-2xl ${category.bg} ${category.color} flex items-center justify-center border border-white dark:border-slate-800 shadow-lg group-hover:rotate-12 transition-transform`}>
+                        <div className={`size-14 rounded-2xl ${category.bg} ${category.color} flex items-center justify-center border border-white dark:border-slate-805 shadow-lg group-hover:rotate-12 transition-transform`}>
                           <category.icon className="size-6" />
                         </div>
                         <div>
@@ -438,37 +450,37 @@ export default function LeadsPage() {
 
                     <div className="grid grid-cols-1 gap-3 mb-6">
                        {lead.assignedEmployee ? (
-                         <Link 
-                           to={`/admin/employees/${lead.assignedEmployee}`}
-                           onClick={(e) => e.stopPropagation()}
-                           className="w-full p-4 bg-slate-50 dark:bg-slate-800/10 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
-                         >
-                            <div>
+                          <Link 
+                            to={`/admin/employees/${lead.assignedEmployee}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full p-4 bg-slate-50 dark:bg-slate-800/10 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
+                          >
+                             <div>
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Active Custodian</span>
-                                <span className="text-sm font-black text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
-                            </div>
-                            <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black text-xs">
-                              {assignedEmp?.name?.[0] || "S"}
-                            </div>
-                         </Link>
+                                <span className="text-sm font-black text-slate-707 dark:text-slate-303 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
+                             </div>
+                             <div className="size-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black text-xs">
+                               {assignedEmp?.name?.[0] || "S"}
+                             </div>
+                          </Link>
                        ) : (
-                         <button 
-                           onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
-                           className="w-full p-4 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-between group transition-all"
-                         >
-                            <div>
-                                <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest block mb-1 underline">Action Required</span>
-                                <span className="text-sm font-black text-slate-700 dark:text-slate-300">Unassigned Lead</span>
-                            </div>
-                            <UserPlus className="size-5 text-rose-500 group-hover:scale-110 transition-transform" />
-                         </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
+                            className="w-full p-4 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-between group transition-all"
+                          >
+                             <div>
+                                <span className="text-[9px] font-black text-rose-505 uppercase tracking-widest block mb-1 underline">Action Required</span>
+                                <span className="text-sm font-black text-slate-707 dark:text-slate-300">Unassigned Lead</span>
+                             </div>
+                             <UserPlus className="size-5 text-rose-500 group-hover:scale-110 transition-transform" />
+                          </button>
                        )}
                     </div>
 
                     <div className="space-y-3 mb-6 px-1">
                        <div className="flex items-center justify-between text-[11px] font-bold">
                           <span className="text-slate-400 uppercase tracking-tighter flex items-center gap-2"><Calendar className="size-4" /> Received At</span>
-                          <span className="text-slate-700 dark:text-slate-300">{new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <span className="text-slate-707 dark:text-slate-303">{new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                        </div>
                        <div className="flex items-center justify-between text-[11px] font-bold">
                           <span className="text-slate-400 uppercase tracking-tighter flex items-center gap-2"><TrendingUp className="size-4" /> Classification</span>
@@ -476,29 +488,29 @@ export default function LeadsPage() {
                        </div>
                     </div>
                     
-                    <div className="pt-5 border-t border-slate-50 dark:border-slate-800 flex gap-2">
+                    <div className="pt-5 border-t border-slate-55 dark:border-slate-800 flex gap-2">
                       <Link 
                         to={`/admin/leads/${lead.leadId}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-sm"
+                        className="flex-1 bg-slate-55 dark:bg-slate-800 text-slate-900 dark:text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-sm"
                       >
-                        Dive into Intelligence <ChevronRight className="size-3.5" />
+                        Details <ChevronRight className="size-3.5" />
                       </Link>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </AnimatePresence>
           </div>
 
-          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm overflow-hidden">
+          <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-808 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-505 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                   <th className="px-6 py-4.5 w-12">
                     <button 
                       onClick={toggleSelectAll}
-                      className={`size-4.5 rounded border flex items-center justify-center transition-all ${isAllOnPageSelected ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800/80 bg-white'}`}
+                      className={`size-4.5 rounded border flex items-center justify-center transition-all ${isAllOnPageSelected ? 'bg-primary border-primary' : 'border-slate-202 dark:border-slate-800 bg-white dark:bg-slate-900'}`}
                     >
                       {isAllOnPageSelected && <Check className="size-3 text-white" />}
                     </button>
@@ -510,7 +522,7 @@ export default function LeadsPage() {
                   <th className="px-6 py-4.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-808/60">
                 {leads.map((lead) => {
                   const category = getCategoryIcon(lead.loanType, lead.leadType);
                   const assignedEmp = employeesMap[lead.assignedEmployee];
@@ -519,10 +531,10 @@ export default function LeadsPage() {
                     <tr 
                       key={lead.leadId} 
                       onClick={() => toggleSelectLead(lead.leadId)}
-                      className={`transition-colors group cursor-pointer border-b border-slate-100/50 dark:border-slate-800/55 last:border-b-0 ${selectedLeads.includes(lead.leadId) ? 'bg-primary/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850'}`}
+                      className={`transition-colors group cursor-pointer border-b border-slate-100/50 dark:border-slate-808 last:border-b-0 ${selectedLeads.includes(lead.leadId) ? 'bg-primary/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850'}`}
                     >
                       <td className="px-6 py-4">
-                        <div className={`size-4.5 rounded border flex items-center justify-center transition-all ${selectedLeads.includes(lead.leadId) ? 'bg-primary border-primary' : 'border-slate-200 dark:border-slate-800'}`}>
+                        <div className={`size-4.5 rounded border flex items-center justify-center transition-all ${selectedLeads.includes(lead.leadId) ? 'bg-primary border-primary' : 'border-slate-202 dark:border-slate-800'}`}>
                           {selectedLeads.includes(lead.leadId) && <Check className="size-3 text-white" />}
                         </div>
                       </td>
@@ -532,7 +544,7 @@ export default function LeadsPage() {
                             <category.icon className="size-4" />
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-900 dark:text-white block leading-tight text-sm">{lead.customerName}</span>
+                            <span className="font-semibold text-slate-909 dark:text-white block leading-tight text-sm">{lead.customerName}</span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 block flex items-center gap-1"><Phone className="size-3" /> {lead.phone}</span>
                           </div>
                         </div>
@@ -545,11 +557,11 @@ export default function LeadsPage() {
                           <Link 
                             to={`/admin/employees/${lead.assignedEmployee}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full p-2 bg-slate-50 dark:bg-slate-800/10 rounded-lg border border-slate-50 dark:border-slate-850 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
+                            className="w-full p-2 bg-slate-55 dark:bg-slate-800/10 rounded-lg border border-slate-50 dark:border-slate-850 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
                           >
                              <div className="flex items-center gap-2">
                                  <div className="size-6 bg-primary/10 rounded-md flex items-center justify-center text-primary font-bold text-[9px]">{assignedEmp?.name?.[0] || 'S'}</div>
-                                 <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
+                                 <span className="text-[10px] font-semibold text-slate-707 dark:text-slate-300 group-hover:text-primary transition-colors">{assignedEmp?.name || "System Protocol"}</span>
                              </div>
                           </Link>
                         ) : (
@@ -558,7 +570,7 @@ export default function LeadsPage() {
                             className="w-full p-2 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center justify-between group transition-all"
                           >
                              <div className="flex items-center gap-2">
-                                 <UserPlus className="size-3 text-rose-500" />
+                                 <UserPlus className="size-3 text-rose-505" />
                                  <span className="text-[10px] font-semibold text-rose-500">Assign</span>
                              </div>
                           </button>
@@ -571,8 +583,8 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                          <div className="flex items-center justify-end gap-1.5">
-                            <Link to={`/admin/leads/${lead.leadId}`} className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-800 text-primary border border-slate-100 dark:border-slate-700 rounded-lg text-[11px] font-semibold uppercase tracking-wider hover:bg-primary hover:text-white transition-all">
-                              View
+                            <Link to={`/admin/leads/${lead.leadId}`} className="px-3.5 py-1.5 bg-slate-55 dark:bg-slate-800 text-primary border border-slate-100 dark:border-slate-700 rounded-lg text-[11px] font-semibold uppercase tracking-wider hover:bg-primary hover:text-white transition-all">
+                              Details
                             </Link>
                          </div>
                       </td>
@@ -593,104 +605,81 @@ export default function LeadsPage() {
       )}
 
       {/* Assignment Modal */}
-      <AnimatePresence>
-        {showAssignModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAssignModal(null)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+      {showAssignModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200"
             >
-               <div className="p-8 pb-4">
-                  <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
-                    <UserPlus className="size-7" />
+               <div className="p-6 pb-4">
+                  <div className="size-12 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4">
+                    <UserPlus className="size-6" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Assign Custodian</h2>
-                  <p className="text-sm font-bold text-slate-500 mt-2">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Assign Custodian</h2>
+                  <p className="text-xs text-slate-505 mt-1">
                     {showAssignModal === 'bulk' 
                       ? `Select an agent to manage the ${selectedLeads.length} selected leads.` 
-                      : 'Transfer this lead intelligence to a specialized agent protocol.'}
+                      : 'Transfer this lead to a specialized agent.'}
                   </p>
                </div>
 
-               <div className="max-h-[300px] overflow-y-auto px-8 py-4 space-y-2">
+               <div className="max-h-[300px] overflow-y-auto px-6 py-2 space-y-2">
                   {employees.filter(e => e.isActive).map(emp => (
                     <button
                       key={emp.userId}
                       onClick={() => handleBulkAssign(emp.userId)}
                       disabled={assigning}
-                      className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-primary hover:text-white transition-all rounded-2xl group border border-slate-100 dark:border-slate-800 disabled:opacity-50"
+                      className="w-full flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-600 hover:text-white transition-all rounded-xl border border-slate-100 dark:border-slate-800 disabled:opacity-50 group"
                     >
-                      <div className="flex items-center gap-4 text-left">
-                        <div className="size-10 bg-white/50 dark:bg-slate-900/50 rounded-xl flex items-center justify-center font-black group-hover:bg-white/20 transition-colors">
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="size-8 bg-white/50 dark:bg-slate-900/50 rounded-lg flex items-center justify-center font-bold text-xs group-hover:bg-white/20 transition-colors uppercase">
                           {emp.name[0]}
                         </div>
                         <div>
-                          <p className="font-black text-sm">{emp.name}</p>
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Team Protocol: {emp.role}</p>
+                          <p className="font-bold text-xs">{emp.name}</p>
+                          <p className="text-[10px] opacity-60">Team Role: {emp.role}</p>
                         </div>
                       </div>
-                      <ChevronRight className="size-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight className="size-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </button>
                   ))}
                </div>
 
-               <div className="p-8 pt-4">
+               <div className="p-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-55 dark:bg-slate-900 flex justify-end">
                   <button 
                     onClick={() => setShowAssignModal(null)}
-                    className="w-full py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                   >
-                    Abort Assignment
+                    Cancel
                   </button>
                </div>
                
                {assigning && (
                   <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] flex items-center justify-center">
-                    <Loader2 className="size-10 animate-spin text-primary" />
+                    <Loader2 className="size-8 animate-spin text-blue-600" />
                   </div>
                )}
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
 
       {/* Spreadsheet Upload Modal */}
-      <AnimatePresence>
-        {showUploadModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!uploading) setShowUploadModal(false); }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-8"
+      {showUploadModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-6"
             >
                <div className="pb-4">
-                  <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6">
-                    <Upload className="size-7" />
+                  <div className="size-12 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4">
+                    <Upload className="size-6" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic">Upload Cold Calling List</h2>
-                  <p className="text-sm font-bold text-slate-500 mt-2">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Upload Cold Calling List</h2>
+                  <p className="text-xs text-slate-500 mt-1">
                     Import lists of leads (CSV, XLS, XLSX) for cold calling campaigns. Columns are mapped automatically.
                   </p>
                </div>
 
                <form onSubmit={handleUploadSubmit} className="space-y-6">
-                 <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-all relative">
+                 <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 transition-all relative">
                    <input 
                      type="file" 
                      accept=".csv, .xls, .xlsx" 
@@ -698,28 +687,28 @@ export default function LeadsPage() {
                      disabled={uploading}
                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                    />
-                   <Upload className="size-8 text-slate-400 mb-4" />
-                   <p className="text-sm font-black text-slate-700 dark:text-slate-300">
+                   <Upload className="size-8 text-slate-400 mb-2" />
+                   <p className="text-sm font-bold text-slate-700 dark:text-slate-350">
                      {file ? file.name : "Drag and drop or click to choose file"}
                    </p>
-                   <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-2">
-                     Supports CSV, XLS, XLSX (Max 10MB)
+                   <p className="text-[10px] text-slate-455 uppercase tracking-wider mt-1">
+                     CSV, XLS, XLSX up to 10MB
                    </p>
                  </div>
 
-                 <div className="flex gap-4">
+                 <div className="flex gap-3 justify-end pt-2">
                    <button 
                      type="button"
                      disabled={uploading}
                      onClick={() => setShowUploadModal(false)}
-                     className="flex-1 py-4 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                     className="py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-655 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                    >
                      Cancel
                    </button>
                    <button 
                      type="submit"
                      disabled={uploading || !file}
-                     className="flex-1 py-4 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                     className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
                    >
                      {uploading ? (
                        <>
@@ -731,11 +720,9 @@ export default function LeadsPage() {
                    </button>
                  </div>
                </form>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
     </div>
   );
 }
-

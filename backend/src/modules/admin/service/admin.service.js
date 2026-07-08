@@ -1,4 +1,5 @@
 const adminRepo = require("../repository/admin.repository");
+const employeeRepo = require("../repository/employee.repository");
 
 class AdminService {
 
@@ -6,11 +7,15 @@ class AdminService {
         const totalLeads = await adminRepo.countLeads();
         const converted = await adminRepo.countConverted();
         const statusBreakdown = await adminRepo.countByStatus();
+        const totalEmployees = await employeeRepo.countEmployees();
+        const loanTypeBreakdown = await adminRepo.countByLoanType();
 
         return {
             totalLeads,
             converted,
-            statusBreakdown
+            statusBreakdown,
+            totalEmployees,
+            loanTypeBreakdown
         };
     }
 

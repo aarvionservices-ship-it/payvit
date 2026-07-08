@@ -76,6 +76,14 @@ class AdminRepository {
             }
         ]);
     }
+
+    async countByLoanType() {
+        return Lead.aggregate([
+            { $match: { status: "converted" } },
+            { $group: { _id: "$loanType", count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]);
+    }
 }
 
 module.exports = new AdminRepository();
