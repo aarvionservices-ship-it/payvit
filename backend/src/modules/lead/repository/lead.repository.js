@@ -11,7 +11,7 @@ class LeadRepository {
 
     async findById(leadId) {
 
-        const lead = await Lead.findOne({ leadId }).lean();
+        const lead = await Lead.findOne({ leadId, isDeleted: { $ne: true } }).lean();
         if (lead) {
             lead.notes = await LeadNote.find({ leadId }).sort({ createdAt: -1 }).lean();
         }
@@ -21,7 +21,8 @@ class LeadRepository {
 
     async findAll(filter, options) {
 
-        return Lead.find(filter)
+        const safeFilter = { ...filter, isDeleted: { $ne: true } };
+        return Lead.find(safeFilter)
             .sort(options.sort)
             .skip(options.skip)
             .limit(options.limit)
@@ -45,7 +46,8 @@ class LeadRepository {
 
     async countLeads(filter) {
 
-        return Lead.countDocuments(filter);
+        const safeFilter = { ...filter, isDeleted: { $ne: true } };
+        return Lead.countDocuments(safeFilter);
 
     }
 
@@ -93,7 +95,28 @@ class LeadRepository {
     }
 
     async findByPhoneAndType(phone, leadType) {
-        return Lead.findOne({ phone, leadType }).lean();
+        return Lead.findOne({ phone, leadType, isDeleted: { $ne: true } }).lean();
+    }
+
+    async softDeleteLead(leadId) {
+        return Lead.updateOne(
+            { leadId },
+            { $set: { isDeleted: true, deletedAt: new Date() } }
+        );
+    }
+
+    async bulkSoftDeleteLeads(leadIds) {
+        return Lead.updateMany(
+            { leadId: { $in: leadIds } },
+            { $set: { isDeleted: true, deletedAt: new Date() } }
+        );
+    }
+
+    async softDeleteLeadsByEmployee(employeeId) {
+        return Lead.updateMany(
+            { assignedEmployee: employeeId, isDeleted: { $ne: true } },
+            { $set: { isDeleted: true, deletedAt: new Date() } }
+        );
     }
 
 }

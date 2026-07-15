@@ -278,6 +278,43 @@ class LeadService {
 
     }
 
+    async deleteLead(leadId) {
+
+        const lead = await leadRepo.findById(leadId);
+        if (!lead) return null;
+
+        await leadRepo.softDeleteLead(leadId);
+
+        eventBus.emit("lead.deleted", { leadId });
+
+        return { leadId };
+
+    }
+
+    async bulkDeleteLeads(leadIds) {
+
+        if (!Array.isArray(leadIds) || leadIds.length === 0) return { deletedCount: 0 };
+
+        const result = await leadRepo.bulkSoftDeleteLeads(leadIds);
+
+        leadIds.forEach(leadId => {
+            eventBus.emit("lead.deleted", { leadId });
+        });
+
+        return { deletedCount: result.modifiedCount || leadIds.length };
+
+    }
+
+    async deleteLeadsByEmployee(employeeId) {
+
+        const result = await leadRepo.softDeleteLeadsByEmployee(employeeId);
+
+        eventBus.emit("lead.history.cleared", { employeeId });
+
+        return { deletedCount: result.modifiedCount || 0 };
+
+    }
+
     async requestDocument(leadId, name, employeeId) {
         const lead = await leadRepo.addRequestedDocument(leadId, name);
         eventBus.emit("lead.document.requested", { leadId, name, employeeId, role: "employee" });

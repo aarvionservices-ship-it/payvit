@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check, Upload } from 'lucide-react';
+import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check, Upload, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { getLeadsRequest, bulkAssignLeadsRequest, uploadColdCallingLeadsRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest, uploadColdCallingLeadsRequest, deleteLeadRequest } from '../../../api/lead.api';
 import { getEmployeesRequest } from '../../../api/admin.api';
 import { toast } from 'react-hot-toast';
 import Pagination from '../../../components/Pagination';
@@ -33,6 +33,18 @@ const getCategoryIcon = (type: string, leadType?: string) => {
   }
 };
 
+const STATUS_PILLS = [
+  { value: 'all', label: 'All' },
+  { value: 'new', label: 'New' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'interested', label: 'Interested' },
+  { value: 'callback', label: 'Callback' },
+  { value: 'in-progress', label: 'In-Progress' },
+  { value: 'converted', label: 'Converted' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -43,11 +55,15 @@ export default function LeadsPage() {
   const [totalLeads, setTotalLeads] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
-  
+
   const [activeTab, setActiveTab] = useState<'applied' | 'cold_calling'>('applied');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<{ leadId: string; customerName: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -110,7 +126,7 @@ export default function LeadsPage() {
       };
 
       const res = await getLeadsRequest(params);
-      
+
       if (res.success) {
         setLeads(res.data?.data || []);
         setTotalLeads(res.data?.total || 0);
@@ -122,14 +138,14 @@ export default function LeadsPage() {
     }
   };
 
-  const fetchData = fetchLeads; 
+  const fetchData = fetchLeads;
 
   const handleBulkAssign = async (employeeId: string) => {
     try {
       setAssigning(true);
       const leadIds = showAssignModal === 'bulk' ? selectedLeads : [showAssignModal!];
       const res = await bulkAssignLeadsRequest(leadIds, employeeId);
-      
+
       if (res.success) {
         toast.success(`Leads successfully assigned to agent`);
         setSelectedLeads([]);
@@ -142,6 +158,29 @@ export default function LeadsPage() {
       setAssigning(false);
     }
   };
+
+  // ── Delete handlers ────────────────────────────────────────────────────────
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      const res = await deleteLeadRequest(deleteTarget.leadId);
+      if (res.success) {
+        toast.success('Lead deleted successfully');
+        setDeleteTarget(null);
+        // Remove from local list instantly for snappy UX
+        setLeads(prev => prev.filter(l => l.leadId !== deleteTarget.leadId));
+        setTotalLeads(prev => Math.max(0, prev - 1));
+      } else {
+        toast.error(res.message || 'Failed to delete lead');
+      }
+    } catch (err) {
+      toast.error('Failed to delete lead');
+    } finally {
+      setDeleting(false);
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   const isAllOnPageSelected = useMemo(() => {
     return leads.length > 0 && leads.every(l => selectedLeads.includes(l.leadId));
@@ -163,7 +202,7 @@ export default function LeadsPage() {
   };
 
   const toggleSelectLead = (id: string) => {
-    setSelectedLeads(prev => 
+    setSelectedLeads(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -190,7 +229,7 @@ export default function LeadsPage() {
             setShowUploadModal(false);
             setFile(null);
             fetchLeads();
-            
+
             const intervals = [1000, 3000, 6000];
             intervals.forEach(delay => {
               setTimeout(() => {
@@ -259,7 +298,7 @@ export default function LeadsPage() {
       {/* Selection Control Bar */}
       <AnimatePresence>
         {selectedLeads.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -269,7 +308,7 @@ export default function LeadsPage() {
               <CheckCircle2 className="size-5 text-primary" />
               <span className="text-xs font-semibold text-primary">{selectedLeads.length} Leads Selected</span>
             </div>
-            <button 
+            <button
               onClick={() => setShowAssignModal('bulk')}
               className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm"
             >
@@ -279,6 +318,7 @@ export default function LeadsPage() {
         )}
       </AnimatePresence>
 
+      {/* Search + Filter bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-3 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative max-w-md w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -291,7 +331,7 @@ export default function LeadsPage() {
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto relative">
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex-1 lg:flex-none p-2 border rounded-xl transition-all relative ${showFilters ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
           >
@@ -306,14 +346,14 @@ export default function LeadsPage() {
             {showFilters && (
               <>
                 {/* Mobile Backdrop */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setShowFilters(false)}
                   className="fixed lg:hidden inset-0 bg-slate-900/40 backdrop-blur-sm z-[99]"
                 />
-                
+
                 <motion.div
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -321,7 +361,7 @@ export default function LeadsPage() {
                   className="fixed lg:absolute bottom-0 lg:bottom-auto lg:top-full left-0 right-0 lg:left-auto lg:right-0 mt-0 lg:mt-4 w-full lg:w-72 bg-white dark:bg-slate-900 border-t lg:border border-slate-200 dark:border-slate-800 rounded-t-[2.5rem] lg:rounded-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.1),0_20px_50px_rgba(0,0,0,0.1)] z-[100] p-6 lg:p-5 space-y-5 lg:space-y-4"
                 >
                   <div className="w-12 h-1 bg-slate-205 dark:bg-slate-800 rounded-full mx-auto mb-2 lg:hidden" />
-                  
+
                   <div>
                     <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Assignment Status</label>
                     <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
@@ -339,27 +379,8 @@ export default function LeadsPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Lifecycle State</label>
-                    <select 
-                      value={filters.status}
-                      onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer capitalize"
-                    >
-                      <option value="all">All Channels</option>
-                      <option value="new">New Entry</option>
-                      <option value="assigned">Assigned</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="interested">Interested</option>
-                      <option value="callback">Callback</option>
-                      <option value="in-progress">In-Progress</option>
-                      <option value="converted">Converted</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  </div>
-
-                  <div>
                     <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Assigned Custodian</label>
-                    <select 
+                    <select
                       value={filters.assignedEmployee}
                       onChange={(e) => setFilters(prev => ({ ...prev, assignedEmployee: e.target.value }))}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
@@ -373,7 +394,7 @@ export default function LeadsPage() {
 
                   <div>
                     <label className="text-[10px] font-semibold text-slate-500 block mb-2 px-1">Service Logic</label>
-                    <select 
+                    <select
                       value={filters.serviceType}
                       onChange={(e) => setFilters(prev => ({ ...prev, serviceType: e.target.value }))}
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-202 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
@@ -387,7 +408,7 @@ export default function LeadsPage() {
                   </div>
 
                   <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                    <button 
+                    <button
                       onClick={() => {
                         setFilters({ search: "", status: "all", assignment: "all", serviceType: "all", assignedEmployee: "all" });
                         setCurrentPage(1);
@@ -397,7 +418,7 @@ export default function LeadsPage() {
                     >
                       Clear All
                     </button>
-                    <button 
+                    <button
                       onClick={() => setShowFilters(false)}
                       className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2 rounded-xl text-xs font-semibold shadow-md lg:hidden cursor-pointer"
                     >
@@ -410,6 +431,27 @@ export default function LeadsPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ── Status Pill-bar ─────────────────────────────────────────────── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {STATUS_PILLS.map(pill => (
+          <button
+            key={pill.value}
+            onClick={() => {
+              setFilters(prev => ({ ...prev, status: pill.value }));
+              setCurrentPage(1);
+            }}
+            className={`shrink-0 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border transition-all ${
+              filters.status === pill.value
+                ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-primary/40 hover:text-primary'
+            }`}
+          >
+            {pill.label}
+          </button>
+        ))}
+      </div>
+      {/* ─────────────────────────────────────────────────────────────────── */}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -424,7 +466,7 @@ export default function LeadsPage() {
               {leads.map((lead) => {
                 const category = getCategoryIcon(lead.loanType, lead.leadType);
                 const assignedEmp = employeesMap[lead.assignedEmployee];
-                
+
                 return (
                   <div
                     key={lead.leadId}
@@ -450,7 +492,7 @@ export default function LeadsPage() {
 
                     <div className="grid grid-cols-1 gap-3 mb-6">
                        {lead.assignedEmployee ? (
-                          <Link 
+                          <Link
                             to={`/admin/employees/${lead.assignedEmployee}`}
                             onClick={(e) => e.stopPropagation()}
                             className="w-full p-4 bg-slate-50 dark:bg-slate-800/10 rounded-2xl border border-slate-50 dark:border-slate-800 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
@@ -464,7 +506,7 @@ export default function LeadsPage() {
                              </div>
                           </Link>
                        ) : (
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
                             className="w-full p-4 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-between group transition-all"
                           >
@@ -487,15 +529,25 @@ export default function LeadsPage() {
                           <span className="text-primary font-black uppercase tracking-[0.1em]">{lead.loanType || "Cold Calling"}</span>
                        </div>
                     </div>
-                    
+
                     <div className="pt-5 border-t border-slate-55 dark:border-slate-800 flex gap-2">
-                      <Link 
+                      <Link
                         to={`/admin/leads/${lead.leadId}`}
                         onClick={(e) => e.stopPropagation()}
                         className="flex-1 bg-slate-55 dark:bg-slate-800 text-slate-900 dark:text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-sm"
                       >
                         Details <ChevronRight className="size-3.5" />
                       </Link>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget({ leadId: lead.leadId, customerName: lead.customerName });
+                        }}
+                        className="p-3 bg-rose-500/5 hover:bg-rose-500/15 border border-rose-500/20 rounded-xl text-rose-500 transition-all hover:scale-105 active:scale-95"
+                        title="Delete lead"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -503,12 +555,13 @@ export default function LeadsPage() {
             </AnimatePresence>
           </div>
 
+          {/* Desktop Table */}
           <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-808 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-505 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                   <th className="px-6 py-4.5 w-12">
-                    <button 
+                    <button
                       onClick={toggleSelectAll}
                       className={`size-4.5 rounded border flex items-center justify-center transition-all ${isAllOnPageSelected ? 'bg-primary border-primary' : 'border-slate-202 dark:border-slate-800 bg-white dark:bg-slate-900'}`}
                     >
@@ -526,10 +579,10 @@ export default function LeadsPage() {
                 {leads.map((lead) => {
                   const category = getCategoryIcon(lead.loanType, lead.leadType);
                   const assignedEmp = employeesMap[lead.assignedEmployee];
-                  
+
                   return (
-                    <tr 
-                      key={lead.leadId} 
+                    <tr
+                      key={lead.leadId}
                       onClick={() => toggleSelectLead(lead.leadId)}
                       className={`transition-colors group cursor-pointer border-b border-slate-100/50 dark:border-slate-808 last:border-b-0 ${selectedLeads.includes(lead.leadId) ? 'bg-primary/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850'}`}
                     >
@@ -554,7 +607,7 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {lead.assignedEmployee ? (
-                          <Link 
+                          <Link
                             to={`/admin/employees/${lead.assignedEmployee}`}
                             onClick={(e) => e.stopPropagation()}
                             className="w-full p-2 bg-slate-55 dark:bg-slate-800/10 rounded-lg border border-slate-50 dark:border-slate-850 flex items-center justify-between hover:border-primary/20 transition-all cursor-pointer"
@@ -565,7 +618,7 @@ export default function LeadsPage() {
                              </div>
                           </Link>
                         ) : (
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); setShowAssignModal(lead.leadId); }}
                             className="w-full p-2 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center justify-between group transition-all"
                           >
@@ -586,6 +639,13 @@ export default function LeadsPage() {
                             <Link to={`/admin/leads/${lead.leadId}`} className="px-3.5 py-1.5 bg-slate-55 dark:bg-slate-800 text-primary border border-slate-100 dark:border-slate-700 rounded-lg text-[11px] font-semibold uppercase tracking-wider hover:bg-primary hover:text-white transition-all">
                               Details
                             </Link>
+                            <button
+                              onClick={() => setDeleteTarget({ leadId: lead.leadId, customerName: lead.customerName })}
+                              className="p-1.5 rounded-lg border border-rose-200/60 dark:border-rose-500/20 text-rose-400 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/40 transition-all"
+                              title="Delete lead"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
                          </div>
                       </td>
                     </tr>
@@ -607,7 +667,7 @@ export default function LeadsPage() {
       {/* Assignment Modal */}
       {showAssignModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div 
+            <div
               className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200"
             >
                <div className="p-6 pb-4">
@@ -616,8 +676,8 @@ export default function LeadsPage() {
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Assign Custodian</h2>
                   <p className="text-xs text-slate-505 mt-1">
-                    {showAssignModal === 'bulk' 
-                      ? `Select an agent to manage the ${selectedLeads.length} selected leads.` 
+                    {showAssignModal === 'bulk'
+                      ? `Select an agent to manage the ${selectedLeads.length} selected leads.`
                       : 'Transfer this lead to a specialized agent.'}
                   </p>
                </div>
@@ -645,14 +705,14 @@ export default function LeadsPage() {
                </div>
 
                <div className="p-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-55 dark:bg-slate-900 flex justify-end">
-                  <button 
+                  <button
                     onClick={() => setShowAssignModal(null)}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                   >
                     Cancel
                   </button>
                </div>
-               
+
                {assigning && (
                   <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] flex items-center justify-center">
                     <Loader2 className="size-8 animate-spin text-blue-600" />
@@ -662,10 +722,66 @@ export default function LeadsPage() {
           </div>
         )}
 
+      {/* ── Delete Confirmation Modal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+            >
+              <div className="p-6">
+                <div className="size-12 bg-rose-50 dark:bg-rose-500/10 rounded-xl flex items-center justify-center mb-4">
+                  <AlertTriangle className="size-6 text-rose-500" />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Delete Lead?</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                  This will permanently hide <span className="font-bold text-slate-800 dark:text-white">{deleteTarget.customerName}</span>'s lead record from the system. The employee's history for this lead will no longer be visible.
+                </p>
+              </div>
+              <div className="px-6 pb-6 flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  className="px-5 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-3.5" />
+                      Delete Lead
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* ─────────────────────────────────────────────────────────────────── */}
+
       {/* Spreadsheet Upload Modal */}
       {showUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div 
+            <div
               className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-6"
             >
                <div className="pb-4">
@@ -680,9 +796,9 @@ export default function LeadsPage() {
 
                <form onSubmit={handleUploadSubmit} className="space-y-6">
                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 transition-all relative">
-                   <input 
-                     type="file" 
-                     accept=".csv, .xls, .xlsx" 
+                   <input
+                     type="file"
+                     accept=".csv, .xls, .xlsx"
                      onChange={handleFileChange}
                      disabled={uploading}
                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -697,7 +813,7 @@ export default function LeadsPage() {
                  </div>
 
                  <div className="flex gap-3 justify-end pt-2">
-                   <button 
+                   <button
                      type="button"
                      disabled={uploading}
                      onClick={() => setShowUploadModal(false)}
@@ -705,7 +821,7 @@ export default function LeadsPage() {
                    >
                      Cancel
                    </button>
-                   <button 
+                   <button
                      type="submit"
                      disabled={uploading || !file}
                      className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"

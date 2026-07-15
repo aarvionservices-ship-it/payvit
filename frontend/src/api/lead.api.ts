@@ -74,4 +74,17 @@ export async function uploadColdCallingLeadsRequest(fileName: string, base64Data
     return res.data;
 }
 
+export async function deleteLeadRequest(id: string) {
+    const res = await api.delete(`/leads/${id}`);
+    return res.data;
+}
 
+export async function bulkDeleteLeadsRequest(leadIds: string[]) {
+    const res = await api.delete("/leads/bulk", { data: { leadIds } });
+    return res.data;
+}
+
+export async function deleteLeadsByEmployeeRequest(employeeId: string) {
+    const res = await api.delete(`/leads/by-employee/${employeeId}`);
+    return res.data;
+}

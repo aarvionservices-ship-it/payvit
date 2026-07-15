@@ -12,13 +12,15 @@ import {
   ChevronRight, 
   XCircle, 
   Search, 
-  FileText,
   UserPlus,
   Edit,
-  Award
+  Award,
+  FileText,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { getEmployeeByIdRequest, getEmployeesRequest } from '../../../api/admin.api';
-import { getLeadsRequest, bulkAssignLeadsRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest, bulkDeleteLeadsRequest, deleteLeadsByEmployeeRequest } from '../../../api/lead.api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import Pagination from '../../../components/Pagination';
@@ -54,7 +56,7 @@ export default function EmployeeDetailsPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'converted' | 'rejected' | 'active'>('all');
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   const [unassignedLeads, setUnassignedLeads] = useState<any[]>([]);
   const [unassignedCount, setUnassignedCount] = useState(0);
@@ -70,6 +72,12 @@ export default function EmployeeDetailsPage() {
   const [otherEmployees, setOtherEmployees] = useState<any[]>([]);
   const [reassigningInProgress, setReassigningInProgress] = useState(false);
   const [modalStatusFilter, setModalStatusFilter] = useState('all');
+
+  // Table multi-select & delete states
+  const [tableSelectedIds, setTableSelectedIds] = useState<string[]>([]);
+  const [isDeleteSelectedModalOpen, setIsDeleteSelectedModalOpen] = useState(false);
+  const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
+  const [deletingInProgress, setDeletingInProgress] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -223,6 +231,64 @@ export default function EmployeeDetailsPage() {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
   };
 
+  // Table multi-select helpers
+  const handleToggleTableRow = (leadId: string) => {
+    setTableSelectedIds(prev =>
+      prev.includes(leadId) ? prev.filter(i => i !== leadId) : [...prev, leadId]
+    );
+  };
+
+  const handleSelectAllOnPage = (checked: boolean) => {
+    if (checked) {
+      const pageIds = paginatedLeads.map((l: any) => l.leadId);
+      setTableSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      const pageIds = new Set(paginatedLeads.map((l: any) => l.leadId));
+      setTableSelectedIds(prev => prev.filter(id => !pageIds.has(id)));
+    }
+  };
+
+
+  const handleBulkDelete = async () => {
+    if (tableSelectedIds.length === 0) return;
+    try {
+      setDeletingInProgress(true);
+      const res = await bulkDeleteLeadsRequest(tableSelectedIds);
+      if (res.success) {
+        toast.success(`Deleted ${tableSelectedIds.length} lead${tableSelectedIds.length > 1 ? 's' : ''}`);
+        setTableSelectedIds([]);
+        setIsDeleteSelectedModalOpen(false);
+        loadData();
+      } else {
+        toast.error(res.message || 'Failed to delete leads');
+      }
+    } catch (e) {
+      toast.error('Failed to delete leads');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!id) return;
+    try {
+      setDeletingInProgress(true);
+      const res = await deleteLeadsByEmployeeRequest(id);
+      if (res.success) {
+        toast.success(`Cleared ${res.data?.deletedCount ?? 'all'} leads from history`);
+        setTableSelectedIds([]);
+        setIsClearHistoryModalOpen(false);
+        loadData();
+      } else {
+        toast.error(res.message || 'Failed to clear history');
+      }
+    } catch (e) {
+      toast.error('Failed to clear history');
+    } finally {
+      setDeletingInProgress(false);
+    }
+  };
+
   // Metrics computation
   const stats = useMemo(() => {
     const total = leads.length;
@@ -238,9 +304,11 @@ export default function EmployeeDetailsPage() {
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       // 1. Tab filtering
-      if (activeTab === 'converted' && lead.status !== 'converted') return false;
-      if (activeTab === 'rejected' && lead.status !== 'rejected') return false;
-      if (activeTab === 'active' && ['converted', 'rejected'].includes(lead.status)) return false;
+      if (activeTab === 'active') {
+        if (['converted', 'rejected'].includes(lead.status)) return false;
+      } else if (activeTab !== 'all') {
+        if (lead.status?.toLowerCase() !== activeTab.toLowerCase()) return false;
+      }
 
       // 2. Search query filtering
       if (searchQuery) {
@@ -262,6 +330,10 @@ export default function EmployeeDetailsPage() {
     const startIndex = (currentPage - 1) * leadsPerPage;
     return filteredLeads.slice(startIndex, startIndex + leadsPerPage);
   }, [filteredLeads, currentPage, leadsPerPage]);
+
+  const isAllPageSelected = useMemo(() => {
+    return paginatedLeads.length > 0 && paginatedLeads.every((l: any) => tableSelectedIds.includes(l.leadId));
+  }, [paginatedLeads, tableSelectedIds]);
 
   if (loading) {
     return (
@@ -387,6 +459,15 @@ export default function EmployeeDetailsPage() {
           >
             <Edit className="size-3.5" /> Edit Profile dossier
           </button>
+
+          {leads.length > 0 && (
+            <button
+              onClick={() => setIsClearHistoryModalOpen(true)}
+              className="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+            >
+              <Trash2 className="size-3.5" /> Delete All Leads History
+            </button>
+          )}
         </div>
 
         {/* Metrics & Leads List */}
@@ -474,54 +555,89 @@ export default function EmployeeDetailsPage() {
                 </div>
               </div>
 
-              {/* Filtering tabs */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              {/* Filtering tabs — full status pill-bar */}
+              <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 overflow-x-auto pb-1 scrollbar-none">
                 {[
-                  { id: 'all', label: 'All Leads', count: stats.total, icon: FileText },
-                  { id: 'converted', label: 'Converted', count: stats.converted, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
-                  { id: 'rejected', label: 'Rejected', count: stats.rejected, icon: XCircle, color: 'text-rose-600 dark:text-rose-400 bg-rose-500/5 border-rose-500/10' },
-                  { id: 'active', label: 'Active', count: stats.active, icon: Target, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/5 border-blue-500/10' }
-                ].map((t) => {
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setActiveTab(t.id as any);
-                        setCurrentPage(1);
-                      }}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all flex items-center gap-2 ${
-                        activeTab === t.id 
-                          ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
-                          : 'bg-white dark:bg-slate-905 border-slate-202 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <Icon className="size-3.5 shrink-0" />
-                      <span>{t.label}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        activeTab === t.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-105 dark:bg-slate-808 text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {t.count}
-                      </span>
-                    </button>
-                  );
-                })}
+                  { id: 'all',         label: 'All',         count: stats.total },
+                  { id: 'active',      label: 'Active',      count: stats.active },
+                  { id: 'new',         label: 'New',         count: leads.filter(l => l.status === 'new').length },
+                  { id: 'assigned',    label: 'Assigned',    count: leads.filter(l => l.status === 'assigned').length },
+                  { id: 'contacted',   label: 'Contacted',   count: leads.filter(l => l.status === 'contacted').length },
+                  { id: 'interested',  label: 'Interested',  count: leads.filter(l => l.status === 'interested').length },
+                  { id: 'callback',    label: 'Callback',    count: leads.filter(l => l.status === 'callback').length },
+                  { id: 'in-progress', label: 'In-Progress', count: leads.filter(l => l.status === 'in-progress').length },
+                  { id: 'converted',   label: 'Converted',   count: stats.converted },
+                  { id: 'rejected',    label: 'Rejected',    count: stats.rejected },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setActiveTab(t.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
+                      activeTab === t.id
+                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/20'
+                        : 'bg-white dark:bg-slate-905 border-slate-202 dark:border-slate-800 text-slate-500 hover:border-primary/40 hover:text-primary'
+                    }`}
+                  >
+                    <span>{t.label}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      activeTab === t.id
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-105 dark:bg-slate-808 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {t.count}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Leads List/Table */}
             <div className="overflow-x-auto">
+              {/* Floating action bar shown when rows are selected */}
+              {tableSelectedIds.length > 0 && (
+                <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-200 dark:border-rose-500/30">
+                  <span className="text-xs font-bold text-rose-700 dark:text-rose-400">
+                    {tableSelectedIds.length} lead{tableSelectedIds.length > 1 ? 's' : ''} selected
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTableSelectedIds([])}
+                      className="text-[10px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors uppercase tracking-wider"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={() => setIsDeleteSelectedModalOpen(true)}
+                      className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.98] shadow-sm"
+                    >
+                      <Trash2 className="size-3.5" />
+                      Delete Selected
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {filteredLeads.length > 0 ? (
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50 dark:bg-slate-808/30 text-slate-505 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                      <th className="px-6 py-4">Customer</th>
-                      <th className="px-6 py-4">Classification</th>
-                      <th className="px-6 py-4">Stage</th>
-                      <th className="px-6 py-4">Assigned On</th>
-                      <th className="px-6 py-4 text-right">View Details</th>
+                      <th className="pl-4 pr-2 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isAllPageSelected}
+                          onChange={e => handleSelectAllOnPage(e.target.checked)}
+                          className="rounded border-slate-300 text-rose-600 focus:ring-rose-500/20 size-3.5 cursor-pointer"
+                          title="Select all on this page"
+                        />
+                      </th>
+                      <th className="px-4 py-4">Customer</th>
+                      <th className="px-4 py-4">Classification</th>
+                      <th className="px-4 py-4">Stage</th>
+                      <th className="px-4 py-4">Assigned On</th>
+                      <th className="px-4 py-4 text-right">View Details</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-808/40">
@@ -533,26 +649,38 @@ export default function EmployeeDetailsPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-808/20 transition-colors group"
+                          className={`transition-colors group ${
+                            tableSelectedIds.includes(lead.leadId)
+                              ? 'bg-rose-50/60 dark:bg-rose-500/5'
+                              : 'hover:bg-slate-50/50 dark:hover:bg-slate-808/20'
+                          }`}
                         >
-                          <td className="px-6 py-4">
+                          <td className="pl-4 pr-2 py-4">
+                            <input
+                              type="checkbox"
+                              checked={tableSelectedIds.includes(lead.leadId)}
+                              onChange={() => handleToggleTableRow(lead.leadId)}
+                              className="rounded border-slate-300 text-rose-600 focus:ring-rose-500/20 size-3.5 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-4 py-4">
                             <div className="font-semibold text-slate-905 dark:text-white text-sm leading-tight">{lead.customerName}</div>
                             <div className="text-[10px] font-medium text-slate-500 mt-0.5">{lead.phone}</div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-4">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700/50">
                               {lead.loanType || lead.productType || 'Cold Calling'}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-4">
                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider border whitespace-nowrap ${getLeadStatusStyles(lead.status)}`}>
                               {lead.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-[10px] font-bold text-slate-400">
+                          <td className="px-4 py-4 text-[10px] font-bold text-slate-400">
                             {new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-4 py-4 text-right">
                             <Link 
                               to={`/admin/leads/${lead.leadId}`}
                               className="inline-flex p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all hover:scale-105 active:scale-95 border border-transparent hover:border-primary/10"
@@ -728,6 +856,94 @@ export default function EmployeeDetailsPage() {
           </div>
         </div>
       )}
+      {/* Delete Selected Leads Modal */}
+      {isDeleteSelectedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-500/10 rounded-xl shrink-0">
+                <AlertTriangle className="size-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Delete Selected Leads</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="p-6 text-sm text-slate-600 dark:text-slate-300">
+              You are about to permanently delete{' '}
+              <span className="font-bold text-rose-600 dark:text-rose-400">{tableSelectedIds.length} lead{tableSelectedIds.length > 1 ? 's' : ''}</span>{' '}
+              from the system. These records will be soft-deleted and no longer visible.
+            </div>
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-end items-center gap-3">
+              <button
+                onClick={() => setIsDeleteSelectedModalOpen(false)}
+                disabled={deletingInProgress}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deletingInProgress}
+                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-all active:scale-[0.98]"
+              >
+                {deletingInProgress ? (
+                  <><Loader2 className="size-4 animate-spin" /><span>Deleting...</span></>
+                ) : (
+                  <><Trash2 className="size-4" /><span>Delete {tableSelectedIds.length} Lead{tableSelectedIds.length > 1 ? 's' : ''}</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All History Modal */}
+      {isClearHistoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-500/10 rounded-xl shrink-0">
+                <AlertTriangle className="size-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Clear All Leads History</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Danger zone — this affects all {stats.total} leads.</p>
+              </div>
+            </div>
+            <div className="p-6 text-sm text-slate-600 dark:text-slate-300 space-y-2">
+              <p>
+                You are about to delete the <span className="font-bold text-slate-900 dark:text-white">entire leads history</span> of{' '}
+                <span className="font-bold text-rose-600 dark:text-rose-400">{employee?.name}</span>.
+              </p>
+              <p className="text-xs text-slate-400">
+                All <span className="font-semibold">{stats.total}</span> assigned leads will be soft-deleted. This cannot be undone from the UI.
+              </p>
+            </div>
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-end items-center gap-3">
+              <button
+                onClick={() => setIsClearHistoryModalOpen(false)}
+                disabled={deletingInProgress}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearHistory}
+                disabled={deletingInProgress}
+                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-all active:scale-[0.98]"
+              >
+                {deletingInProgress ? (
+                  <><Loader2 className="size-4 animate-spin" /><span>Clearing...</span></>
+                ) : (
+                  <><Trash2 className="size-4" /><span>Clear All History</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+
   );
 }

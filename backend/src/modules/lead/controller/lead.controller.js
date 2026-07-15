@@ -50,6 +50,57 @@ class LeadController {
 
     }
 
+    async deleteLead(req, res) {
+
+        const result = await leadService.deleteLead(req.params.id);
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: "Lead not found" });
+        }
+
+        res.json({
+            success: true,
+            message: "Lead deleted successfully"
+        });
+
+    }
+
+    async bulkDeleteLeads(req, res) {
+
+        const { leadIds } = req.body;
+
+        if (!Array.isArray(leadIds) || leadIds.length === 0) {
+            return res.status(400).json({ success: false, message: "leadIds array is required" });
+        }
+
+        const result = await leadService.bulkDeleteLeads(leadIds);
+
+        res.json({
+            success: true,
+            message: `Successfully deleted ${result.deletedCount} leads`,
+            data: result
+        });
+
+    }
+
+    async deleteLeadsByEmployee(req, res) {
+
+        const { employeeId } = req.params;
+
+        if (!employeeId) {
+            return res.status(400).json({ success: false, message: "employeeId is required" });
+        }
+
+        const result = await leadService.deleteLeadsByEmployee(employeeId);
+
+        res.json({
+            success: true,
+            message: `Cleared ${result.deletedCount} leads from employee history`,
+            data: result
+        });
+
+    }
+
     async getLeads(req, res) {
 
         const { role, userId } = req.user;

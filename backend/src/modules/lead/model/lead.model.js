@@ -95,7 +95,18 @@ const leadSchema = new mongoose.Schema({
         },
         url: String,
         uploadedAt: Date
-    }]
+    }],
+
+    isDeleted: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+
+    deletedAt: {
+        type: Date,
+        default: null
+    }
 
 }, { timestamps: true });
 

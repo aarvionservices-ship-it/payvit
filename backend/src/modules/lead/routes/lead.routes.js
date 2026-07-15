@@ -54,6 +54,27 @@ router.patch(
     leadController.updateStatus
 );
 
+router.delete(
+    "/bulk",
+    auth,
+    roles(["admin"]),
+    leadController.bulkDeleteLeads
+);
+
+router.delete(
+    "/by-employee/:employeeId",
+    auth,
+    roles(["admin"]),
+    leadController.deleteLeadsByEmployee
+);
+
+router.delete(
+    "/:id",
+    auth,
+    roles(["admin"]),
+    leadController.deleteLead
+);
+
 router.post(
     "/:id/assign",
     auth,
