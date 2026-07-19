@@ -8,12 +8,17 @@ import {
   ShieldCheck, 
   Layout,
   MessageSquare,
-  Loader2
+  Loader2,
+  Database,
+  Download,
+  Upload,
+  TriangleAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSettings, updateSettings } from '../../../api/settings.api';
+import { exportBackup, restoreBackup, getCleanupPreview, executeCleanup } from '../../../api/backup.api';
 
-type TabType = 'general' | 'ui' | 'communication' | 'notification' | 'email';
+type TabType = 'general' | 'ui' | 'communication' | 'notification' | 'email' | 'backup';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('general');
@@ -22,6 +27,21 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null);
   const [originalSettings, setOriginalSettings] = useState<any>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const [backupFile, setBackupFile] = useState<File | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreSuccess, setRestoreSuccess] = useState<any>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [backupConfirmed, setBackupConfirmed] = useState(false);
+
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [cleanupPreviewData, setCleanupPreviewData] = useState<any>(null);
+  const [isQueryingPreview, setIsQueryingPreview] = useState(false);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
+  const [cleanupConfirmText, setCleanupConfirmText] = useState('');
+  const [cleanupResult, setCleanupResult] = useState<any>(null);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -54,6 +74,116 @@ export default function SettingsPage() {
       console.error('Error saving settings:', error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await exportBackup();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `backup-leads-history-${new Date().toISOString().split('T')[0]}.json.gz`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Export failed:', error);
+      alert('Failed to generate backup: ' + (error.message || 'Server error'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!backupFile) {
+      setRestoreError('Please select a backup file first.');
+      return;
+    }
+    if (!backupConfirmed) {
+      setRestoreError('You must confirm that this will overwrite existing records.');
+      return;
+    }
+
+    try {
+      setIsRestoring(true);
+      setRestoreError(null);
+      setRestoreSuccess(null);
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64 = (e.target?.result as string).split(',')[1];
+          const response = await restoreBackup(base64);
+          if (response.success) {
+            setRestoreSuccess(response.data);
+            setBackupFile(null);
+            setBackupConfirmed(false);
+          } else {
+            setRestoreError(response.message || 'Restore failed');
+          }
+        } catch (err: any) {
+          setRestoreError(err.message || 'Failed to send restore request');
+        } finally {
+          setIsRestoring(false);
+        }
+      };
+      reader.readAsDataURL(backupFile);
+    } catch (error: any) {
+      setRestoreError(error.message || 'Failed to read file');
+      setIsRestoring(false);
+    }
+  };
+
+  const handleCleanupPreview = async () => {
+    if (selectedStatuses.length === 0) {
+      alert('Please select at least one lead state.');
+      return;
+    }
+
+    try {
+      setIsQueryingPreview(true);
+      setCleanupResult(null);
+      setCleanupConfirmText('');
+      const response = await getCleanupPreview(selectedStatuses);
+      if (response.success) {
+        setCleanupPreviewData(response.data);
+        setShowCleanupModal(true);
+      } else {
+        alert(response.message || 'Failed to fetch deletion preview');
+      }
+    } catch (error: any) {
+      console.error('Preview failed:', error);
+      alert('Error fetching preview data: ' + (error.message || 'Server error'));
+    } finally {
+      setIsQueryingPreview(false);
+    }
+  };
+
+  const handleExecuteCleanup = async () => {
+    if (cleanupConfirmText !== 'PURGE') {
+      alert('Confirmation word does not match.');
+      return;
+    }
+
+    try {
+      setIsCleaningUp(true);
+      const response = await executeCleanup(selectedStatuses);
+      if (response.success) {
+        setCleanupResult(response.data);
+        setShowCleanupModal(false);
+        setCleanupPreviewData(null);
+        setSelectedStatuses([]);
+      } else {
+        alert(response.message || 'Deletion execution failed');
+      }
+    } catch (error: any) {
+      console.error('Purge execution failed:', error);
+      alert('Error purging lead records: ' + (error.message || 'Server error'));
+    } finally {
+      setIsCleaningUp(false);
     }
   };
 
@@ -121,6 +251,7 @@ export default function SettingsPage() {
     { id: 'communication', label: 'Communication', icon: MessageSquare },
     { id: 'notification', label: 'Notifications', icon: Bell },
     { id: 'email', label: 'Email Engine', icon: Mail },
+    { id: 'backup', label: 'Backup & Restore', icon: Database },
   ];
 
   return (
@@ -504,10 +635,275 @@ export default function SettingsPage() {
                          </div>
                       </div>
                    </motion.div>
-                 )}
+                  )}
               </div>
-           )}
-        </motion.div>
+          )}
+          {activeTab === 'backup' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-800 dark:text-slate-100">
+                  {/* Export Panel */}
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-4">
+                        <div className="size-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center animate-pulse">
+                          <Database className="size-4.5" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Export Database Backup</h3>
+                      </div>
+                      
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                        Generate a compact and compressed binary backup file of the platform's core data. This file can be used to perfectly restore the system state later.
+                      </p>
+                      
+                      <div className="bg-slate-50 dark:bg-slate-800/20 rounded-xl p-4 border border-slate-100 dark:border-slate-800 space-y-2">
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">Included Modules:</p>
+                        <ul className="text-xs text-slate-500 dark:text-slate-400 list-disc list-inside space-y-1">
+                          <li>Leads & Applications Data</li>
+                          <li>Lead Audit Trail & Action History</li>
+                          <li>Agent Communication Logs & Timelines</li>
+                          <li>Customer & System Interaction Notes</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleExport}
+                      disabled={isExporting}
+                      className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                    >
+                      {isExporting ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          <span>Generating Gzip Archive...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="size-4" />
+                          <span>Download Gzipped Backup</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Restore Panel */}
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-4">
+                        <div className="size-8 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 flex items-center justify-center">
+                          <Upload className="size-4.5" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Restore Database Backup</h3>
+                      </div>
+
+                      <div className="bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/50 rounded-xl p-4 text-rose-800 dark:text-rose-455 flex gap-3 mb-4">
+                        <TriangleAlert className="size-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold">Destructive Operation</p>
+                          <p className="text-[11px] leading-relaxed">
+                            Restoring a backup will overwrite the current Leads, History, Communication Logs, and Notes database records. This is permanent. Please proceed with absolute caution.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* File Upload Zone */}
+                      <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-6 text-center cursor-pointer transition-colors relative">
+                        <input
+                          type="file"
+                          accept=".gz"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setBackupFile(file);
+                              setRestoreError(null);
+                              setRestoreSuccess(null);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                        <Upload className="size-8 text-slate-400 mx-auto mb-2" />
+                        {backupFile ? (
+                          <div>
+                            <p className="text-xs font-bold text-slate-850 dark:text-white truncate max-w-full">
+                              {backupFile.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              {(backupFile.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-355">
+                              Click to upload or drag & drop
+                            </p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              Only .json.gz files are accepted
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Overwrite Confirmation */}
+                      <div className="flex items-start gap-2.5 mt-4">
+                        <input
+                          type="checkbox"
+                          id="backup-confirm-chk"
+                          checked={backupConfirmed}
+                          onChange={(e) => setBackupConfirmed(e.target.checked)}
+                          className="mt-0.5 size-3.5 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="backup-confirm-chk" className="text-[11px] font-medium text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                          I understand that restoring will erase all current Leads and History records and replace them with the backup content.
+                        </label>
+                      </div>
+
+                      {/* Status Messages */}
+                      {restoreError && (
+                        <div className="mt-4 p-3 bg-rose-50 dark:bg-rose-955/10 border border-rose-100 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 rounded-xl text-xs flex items-center gap-2">
+                          <TriangleAlert className="size-4 shrink-0" />
+                          <span>{restoreError}</span>
+                        </div>
+                      )}
+
+                      {restoreSuccess && (
+                        <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-955/10 border border-emerald-100 dark:border-emerald-900/30 text-emerald-750 dark:text-emerald-400 rounded-xl text-xs space-y-1">
+                          <p className="font-bold">Restore Complete!</p>
+                          <p className="text-[11px] opacity-90">
+                            Restored {restoreSuccess.leadsCount} leads, {restoreSuccess.leadHistoriesCount} histories, {restoreSuccess.communicationLogsCount} communication logs, and {restoreSuccess.leadNotesCount} notes.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRestore}
+                      disabled={isRestoring || !backupFile || !backupConfirmed}
+                      className="mt-6 w-full bg-rose-600 hover:bg-rose-700 disabled:bg-slate-105 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white py-3 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                    >
+                      {isRestoring ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          <span>Extracting & Restoring...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Database className="size-4" />
+                          <span>Restore Platform Database</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+              {/* Database Cleanup Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                    <div className="size-8 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 flex items-center justify-center animate-pulse">
+                      <Trash2 className="size-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">Database Cleanup & Lead Purging</h3>
+                      <p className="text-[11px] text-slate-505 dark:text-slate-400 mt-0.5">Filter leads by statuses to permanently delete their records and associated logs.</p>
+                    </div>
+                  </div>
+
+                  {/* Checkbox Grid */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">Select Lead States to Purge:</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { id: 'new', label: 'New' },
+                        { id: 'assigned', label: 'Assigned' },
+                        { id: 'contacted', label: 'Contacted' },
+                        { id: 'interested', label: 'Interested' },
+                        { id: 'callback', label: 'Callback' },
+                        { id: 'in-progress', label: 'In Progress' },
+                        { id: 'converted', label: 'Converted' },
+                        { id: 'rejected', label: 'Rejected' },
+                      ].map((status) => {
+                        const isChecked = selectedStatuses.includes(status.id);
+                        return (
+                          <label
+                            key={status.id}
+                            className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-semibold cursor-pointer select-none transition-all ${
+                              isChecked
+                                ? 'bg-rose-50/40 dark:bg-rose-955/10 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400'
+                                : 'bg-slate-50 dark:bg-slate-850/20 border-slate-205 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStatuses([...selectedStatuses, status.id]);
+                                } else {
+                                  setSelectedStatuses(selectedStatuses.filter((s) => s !== status.id));
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`size-4 rounded border flex items-center justify-center shrink-0 ${
+                              isChecked
+                                ? 'bg-rose-600 border-rose-650 text-white'
+                                : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                            }`}>
+                              {isChecked && (
+                                <svg className="size-2.5 fill-current" viewBox="0 0 20 20">
+                                  <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                                </svg>
+                              )}
+                            </div>
+                            <span>{status.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Feedback Action results */}
+                  {cleanupResult && (
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-955/10 border border-emerald-100 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 rounded-xl text-xs space-y-1.5 animate-in fade-in duration-200">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <span>Purge Complete!</span>
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                        <div className="bg-white dark:bg-slate-850 p-2.5 rounded-lg border border-emerald-100/30 text-center">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Leads Deleted</p>
+                          <p className="text-base font-extrabold mt-0.5">{cleanupResult.leadsDeleted}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-850 p-2.5 rounded-lg border border-emerald-100/30 text-center">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Histories Cleared</p>
+                          <p className="text-base font-extrabold mt-0.5">{cleanupResult.historiesDeleted}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-850 p-2.5 rounded-lg border border-emerald-100/30 text-center">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Logs Erased</p>
+                          <p className="text-base font-extrabold mt-0.5">{cleanupResult.logsDeleted}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-850 p-2.5 rounded-lg border border-emerald-100/30 text-center">
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">Notes Purged</p>
+                          <p className="text-base font-extrabold mt-0.5">{cleanupResult.notesDeleted}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end mt-4">
+                    <button
+                      type="button"
+                      onClick={handleCleanupPreview}
+                      disabled={selectedStatuses.length === 0 || isQueryingPreview}
+                      className="bg-rose-605 hover:bg-rose-700 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white px-6 py-2.5 rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-[0.98]"
+                    >
+                      {isQueryingPreview ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                      <span>Preview Deletion & Purge</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+         </motion.div>
       </AnimatePresence>
 
       {/* Save Confirmation Modal */}
@@ -550,6 +946,76 @@ export default function SettingsPage() {
                     className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all"
                   >
                     {isSaving ? <Loader2 className="size-4 animate-spin" /> : 'Confirm Save'}
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Purge Deletion Confirmation Modal */}
+      <AnimatePresence>
+        {showCleanupModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCleanupModal(false)}
+              className="absolute inset-0"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800 p-6 text-center"
+            >
+               <div className="size-14 bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-455 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 dark:border-slate-800 animate-bounce">
+                  <TriangleAlert className="size-6" />
+               </div>
+               <h2 className="text-base font-bold text-slate-900 dark:text-white mb-1.5 font-sans">Purge Deletion Warning!</h2>
+               
+               <div className="text-left my-4 p-4 bg-slate-50 dark:bg-slate-850/50 rounded-xl border border-slate-202 dark:border-slate-800 space-y-2">
+                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Items to delete:</p>
+                 <ul className="text-xs text-slate-600 dark:text-slate-400 list-disc list-inside space-y-1.5 font-mono">
+                   {cleanupPreviewData && Object.entries(cleanupPreviewData).map(([status, count]) => (
+                     <li key={status}>
+                       <span className="capitalize">{status}</span> leads: <span className="font-extrabold text-rose-600 dark:text-rose-400">{count as number}</span>
+                     </li>
+                   ))}
+                 </ul>
+                 <p className="text-[10px] text-slate-500 mt-2">
+                   *All matching logs, histories, and notes will be permanently erased.
+                 </p>
+               </div>
+
+               <div className="space-y-2 text-left mb-6 font-sans">
+                 <label className="text-[10px] font-bold text-slate-500 uppercase block">Type "PURGE" to confirm:</label>
+                 <input 
+                   type="text"
+                   value={cleanupConfirmText}
+                   onChange={(e) => setCleanupConfirmText(e.target.value)}
+                   placeholder="PURGE"
+                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-750 rounded-xl px-4 py-2.5 text-center font-mono text-sm font-extrabold tracking-widest focus:ring-2 focus:ring-rose-500/20 outline-none uppercase"
+                 />
+               </div>
+
+               <div className="flex gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setShowCleanupModal(false)}
+                    className="flex-1 py-2 text-xs font-semibold text-slate-505 hover:text-slate-750 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleExecuteCleanup}
+                    disabled={isCleaningUp || cleanupConfirmText !== 'PURGE'}
+                    className="flex-[2] bg-rose-600 hover:bg-rose-700 disabled:bg-slate-105 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    {isCleaningUp ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                    Confirm Purge
                   </button>
                </div>
             </motion.div>
