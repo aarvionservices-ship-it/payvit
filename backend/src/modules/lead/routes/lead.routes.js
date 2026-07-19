@@ -90,6 +90,13 @@ router.post(
 );
 
 router.post(
+    "/preview-import",
+    auth,
+    roles(["admin"]),
+    leadController.previewImport
+);
+
+router.post(
     "/upload-cold-calling",
     auth,
     roles(["admin"]),

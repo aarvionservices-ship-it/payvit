@@ -304,7 +304,7 @@ class LeadController {
     }
 
     async bulkCreateLeads(req, res) {
-        const { fileName, fileData } = req.body;
+        const { fileName, fileData, limit } = req.body;
         
         if (!fileData) {
             return res.status(400).json({ success: false, message: "File data is required" });
@@ -348,7 +348,8 @@ class LeadController {
                 const loanTypeKey = getMatchedKey(["loantype", "type", "category", "product", "loanclass"]);
                 const remarksKey = getMatchedKey(["note", "notes", "log", "logs", "interaction", "interactiondetails", "logdetails", "remarks", "remark", "details", "comment", "comments"]);
                 
-                mapped.customerName = nameKey ? String(row[nameKey]).trim() : "";
+                const nameVal = nameKey ? String(row[nameKey]).trim() : "";
+                mapped.customerName = nameVal || "Cold Calling Lead";
                 
                 const rawPhone = phoneKey ? row[phoneKey] : "";
                 mapped.phone = rawPhone ? String(rawPhone).trim() : "";
@@ -396,16 +397,35 @@ class LeadController {
                 mapped.note = extraDetails.join("\n");
                 
                 return mapped;
-            }).filter(lead => lead.customerName && lead.phone); // Filter out rows without valid name and phone
+            }).filter(lead => lead.phone); // Filter out rows without valid phone
             
-            if (mappedLeads.length === 0) {
-                return res.status(400).json({ success: false, message: "No valid lead records found. 'Name' and 'Phone' columns are required." });
+            // Deduplicate by phone
+            const seenPhones = new Set();
+            const uniqueLeads = [];
+            for (const lead of mappedLeads) {
+                if (lead.phone && !seenPhones.has(lead.phone)) {
+                    seenPhones.add(lead.phone);
+                    uniqueLeads.push(lead);
+                }
+            }
+            
+            if (uniqueLeads.length === 0) {
+                return res.status(400).json({ success: false, message: "No valid lead records found with a 'Phone' column." });
+            }
+            
+            // Apply limit if specified
+            let finalLeads = uniqueLeads;
+            if (limit !== undefined && limit !== null && limit !== "") {
+                const parsedLimit = parseInt(limit, 10);
+                if (!isNaN(parsedLimit) && parsedLimit > 0) {
+                    finalLeads = uniqueLeads.slice(0, parsedLimit);
+                }
             }
             
             const performerId = req.user?.userId || "SYSTEM";
             
             // Asynchronously process lead inserts in the background
-            leadService.bulkCreateLeads(mappedLeads, performerId)
+            leadService.bulkCreateLeads(finalLeads, performerId)
                 .then(createdLeads => {
                     console.log(`Successfully completed background import of ${createdLeads.length} cold calling leads.`);
                 })
@@ -415,14 +435,148 @@ class LeadController {
             
             res.json({
                 success: true,
-                message: `Spreadsheet parsed. Import of ${mappedLeads.length} leads started in the background.`,
-                count: mappedLeads.length
+                message: `Spreadsheet parsed. Import of ${finalLeads.length} leads started in the background.`,
+                count: finalLeads.length
             });
         } catch (err) {
             console.error("Bulk upload parsing failed:", err);
             res.status(500).json({
                 success: false,
                 message: "Failed to parse spreadsheet file: " + err.message
+            });
+        }
+    }
+
+    async previewImport(req, res) {
+        const { fileName, fileData } = req.body;
+        
+        if (!fileData) {
+            return res.status(400).json({ success: false, message: "File data is required" });
+        }
+        
+        try {
+            const buffer = Buffer.from(fileData, "base64");
+            const workbook = XLSX.read(buffer, { type: "buffer" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const rawRows = XLSX.utils.sheet_to_json(worksheet);
+            
+            if (!rawRows || rawRows.length === 0) {
+                return res.status(400).json({ success: false, message: "Spreadsheet is empty" });
+            }
+            
+            // Flexible headers mapper with alphanumeric normalization
+            const mappedLeads = rawRows.map(row => {
+                const mapped = {};
+                const keys = Object.keys(row);
+                
+                const getVal = (possibleKeys) => {
+                    const foundKey = keys.find(k => {
+                        const normalized = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+                        return possibleKeys.includes(normalized);
+                    });
+                    return foundKey ? row[foundKey] : undefined;
+                };
+                
+                const getMatchedKey = (possibleKeys) => {
+                    return keys.find(k => {
+                        const normalized = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+                        return possibleKeys.includes(normalized);
+                    });
+                };
+                
+                const nameKey = getMatchedKey(["name", "customername", "fullname", "contactname", "nameofdirectors", "directors", "directorname", "director"]);
+                const phoneKey = getMatchedKey(["phone", "phonenumber", "mobile", "mobilenumber", "moblienumber", "contact", "phone1"]);
+                const emailKey = getMatchedKey(["email", "emailaddress", "mail", "emailid"]);
+                const loanTypeKey = getMatchedKey(["loantype", "type", "category", "product", "loanclass"]);
+                const remarksKey = getMatchedKey(["note", "notes", "log", "logs", "interaction", "interactiondetails", "logdetails", "remarks", "remark", "details", "comment", "comments"]);
+                
+                const nameVal = nameKey ? String(row[nameKey]).trim() : "";
+                mapped.customerName = nameVal || "Cold Calling Lead";
+                
+                const rawPhone = phoneKey ? row[phoneKey] : "";
+                mapped.phone = rawPhone ? String(rawPhone).trim() : "";
+                
+                mapped.email = emailKey ? String(row[emailKey]).trim() : "";
+                mapped.loanType = loanTypeKey ? String(row[loanTypeKey]).trim() : "";
+                
+                // Create highly structured metadata details from extra columns
+                const extraDetails = [];
+                
+                const companyVal = getVal(["company", "companyname", "comapnyname", "organization", "firm"]);
+                if (companyVal) extraDetails.push(`Company Name: ${companyVal}`);
+                
+                const cinVal = getVal(["cin", "cinnumber", "corporateid"]);
+                if (cinVal) extraDetails.push(`CIN Number: ${cinVal}`);
+                
+                const natureVal = getVal(["natureofbusiness", "businessnature", "nature", "industry"]);
+                if (natureVal) extraDetails.push(`Nature of Business: ${natureVal}`);
+                
+                const designationVal = getVal(["leads", "designation", "role", "title", "jobtitle"]);
+                if (designationVal) extraDetails.push(`Designation: ${designationVal}`);
+                
+                const dateOfVal = getVal(["dateof", "incorporationdate", "registrationdate"]);
+                if (dateOfVal) extraDetails.push(`Date of Registration/Inc: ${dateOfVal}`);
+                
+                // Track non-standard extra headers
+                const specialKeys = [nameKey, phoneKey, emailKey, loanTypeKey, remarksKey];
+                const explicitKeys = ["company", "companyname", "comapnyname", "organization", "firm", "cin", "cinnumber", "corporateid", "natureofbusiness", "businessnature", "nature", "industry", "leads", "designation", "role", "title", "jobtitle", "dateof", "incorporationdate", "registrationdate"];
+                
+                keys.forEach(k => {
+                    const normalized = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+                    if (!specialKeys.includes(k) && !explicitKeys.includes(normalized)) {
+                        const val = row[k];
+                        if (val !== undefined && val !== null && val !== "") {
+                            extraDetails.push(`${k}: ${val}`);
+                        }
+                    }
+                });
+                
+                const originalRemarks = remarksKey ? row[remarksKey] : "";
+                if (originalRemarks) {
+                    extraDetails.push(`Remarks: ${originalRemarks}`);
+                }
+                
+                mapped.note = extraDetails.join("\n");
+                
+                return mapped;
+            }).filter(lead => lead.phone);
+            
+            // Deduplicate by phone
+            const seenPhones = new Set();
+            const uniqueLeads = [];
+            for (const lead of mappedLeads) {
+                if (lead.phone && !seenPhones.has(lead.phone)) {
+                    seenPhones.add(lead.phone);
+                    uniqueLeads.push(lead);
+                }
+            }
+            
+            // Query DB to check if these unique phones already exist
+            const Lead = require("../model/lead.model");
+            const phonesList = uniqueLeads.map(l => l.phone);
+            const existingLeads = await Lead.find({
+                phone: { $in: phonesList },
+                leadType: "cold_calling",
+                isDeleted: { $ne: true }
+            }).select("phone").lean();
+            
+            const existingPhones = new Set(existingLeads.map(l => l.phone));
+            const newLeadsCount = uniqueLeads.filter(l => !existingPhones.has(l.phone)).length;
+            
+            res.json({
+                success: true,
+                totalRows: rawRows.length,
+                validLeadsCount: mappedLeads.length,
+                uniqueLeadsCount: uniqueLeads.length,
+                newLeadsCount,
+                preview: uniqueLeads.slice(0, 5)
+            });
+        } catch (err) {
+            console.error("Preview upload failed:", err);
+            res.status(500).json({
+                success: false,
+                message: "Failed to parse spreadsheet preview: " + err.message
             });
         }
     }

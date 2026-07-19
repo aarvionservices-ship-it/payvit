@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Download, Landmark, CreditCard, Briefcase, Phone, Calendar, ChevronRight, TrendingUp, UserPlus, CheckCircle2, Loader2, Check, Upload, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { getLeadsRequest, bulkAssignLeadsRequest, uploadColdCallingLeadsRequest, deleteLeadRequest } from '../../../api/lead.api';
+import { getLeadsRequest, bulkAssignLeadsRequest, uploadColdCallingLeadsRequest, deleteLeadRequest, previewColdCallingLeadsRequest } from '../../../api/lead.api';
 import { getEmployeesRequest } from '../../../api/admin.api';
 import { toast } from 'react-hot-toast';
 import Pagination from '../../../components/Pagination';
@@ -60,6 +60,9 @@ export default function LeadsPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<any | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [importLimit, setImportLimit] = useState<string>("");
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState<{ leadId: string; customerName: string } | null>(null);
@@ -207,10 +210,52 @@ export default function LeadsPage() {
     );
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setLoadingPreview(true);
+      setPreviewData(null);
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Data = (reader.result as string).split(',')[1];
+            const res = await previewColdCallingLeadsRequest(selectedFile.name, base64Data);
+            if (res.success) {
+              setPreviewData(res);
+              // Default import limit to the total unique leads
+              setImportLimit(String(res.uniqueLeadsCount));
+            } else {
+              toast.error(res.message || "Failed to generate preview");
+              setFile(null);
+            }
+          } catch (err: any) {
+            toast.error(err.message || "Failed to parse preview");
+            setFile(null);
+          } finally {
+            setLoadingPreview(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error("Failed to read file");
+          setLoadingPreview(false);
+          setFile(null);
+        };
+        reader.readAsDataURL(selectedFile);
+      } catch (err) {
+        toast.error("Error reading file");
+        setLoadingPreview(false);
+        setFile(null);
+      }
     }
+  };
+
+  const handleResetUpload = () => {
+    setFile(null);
+    setPreviewData(null);
+    setImportLimit("");
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -223,11 +268,14 @@ export default function LeadsPage() {
       reader.onload = async () => {
         try {
           const base64Data = (reader.result as string).split(',')[1];
-          const res = await uploadColdCallingLeadsRequest(file.name, base64Data);
+          const limitVal = importLimit ? parseInt(importLimit, 10) : undefined;
+          const res = await uploadColdCallingLeadsRequest(file.name, base64Data, limitVal);
           if (res.success) {
             toast.success(res.message || "Cold calling leads synchronized successfully!");
             setShowUploadModal(false);
             setFile(null);
+            setPreviewData(null);
+            setImportLimit("");
             fetchLeads();
 
             const intervals = [1000, 3000, 6000];
@@ -782,60 +830,253 @@ export default function LeadsPage() {
       {showUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-6"
+              className={`relative w-full transition-all duration-300 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 p-6 ${
+                previewData ? 'max-w-2xl' : 'max-w-md'
+              }`}
             >
-               <div className="pb-4">
-                  <div className="size-12 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4">
-                    <Upload className="size-6" />
+               {/* Close button if not uploading */}
+               {!uploading && (
+                 <button
+                   onClick={() => {
+                     setShowUploadModal(false);
+                     handleResetUpload();
+                   }}
+                   className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                 >
+                   <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               )}
+
+               <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-xl flex items-center justify-center">
+                      {loadingPreview ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : previewData ? (
+                        <CheckCircle2 className="size-5 text-emerald-500" />
+                      ) : (
+                        <Upload className="size-5" />
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                        {loadingPreview ? "Analyzing File" : previewData ? "Spreadsheet Preview" : "Upload Cold Calling List"}
+                      </h2>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {loadingPreview
+                          ? "Parsing rows and mapping columns..."
+                          : previewData
+                          ? `Mapped content of ${file?.name}`
+                          : "Import lists of leads (CSV, XLS, XLSX) for cold calling campaigns."}
+                      </p>
+                    </div>
                   </div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Upload Cold Calling List</h2>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Import lists of leads (CSV, XLS, XLSX) for cold calling campaigns. Columns are mapped automatically.
-                  </p>
                </div>
 
-               <form onSubmit={handleUploadSubmit} className="space-y-6">
-                 <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 transition-all relative">
-                   <input
-                     type="file"
-                     accept=".csv, .xls, .xlsx"
-                     onChange={handleFileChange}
-                     disabled={uploading}
-                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                   />
-                   <Upload className="size-8 text-slate-400 mb-2" />
-                   <p className="text-sm font-bold text-slate-700 dark:text-slate-350">
-                     {file ? file.name : "Drag and drop or click to choose file"}
+               {loadingPreview && (
+                 <div className="py-16 flex flex-col items-center justify-center text-center">
+                   <Loader2 className="size-10 text-blue-600 animate-spin mb-4" />
+                   <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                     Analyzing spreadsheet columns and structures...
                    </p>
-                   <p className="text-[10px] text-slate-455 uppercase tracking-wider mt-1">
-                     CSV, XLS, XLSX up to 10MB
+                   <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                     This processes headers, validates formats, removes phone duplicates, and checks existing database records.
                    </p>
                  </div>
+               )}
 
-                 <div className="flex gap-3 justify-end pt-2">
-                   <button
-                     type="button"
-                     disabled={uploading}
-                     onClick={() => setShowUploadModal(false)}
-                     className="py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-655 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                   >
-                     Cancel
-                   </button>
-                   <button
-                     type="submit"
-                     disabled={uploading || !file}
-                     className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
-                   >
-                     {uploading ? (
-                       <>
-                         <Loader2 className="size-4 animate-spin" /> Synchronizing...
-                       </>
-                     ) : (
-                       "Initialize Import"
-                     )}
-                   </button>
-                 </div>
-               </form>
+               {!loadingPreview && !previewData && (
+                 <form onSubmit={(e) => e.preventDefault()} className="space-y-6 pt-4">
+                   <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 transition-all relative">
+                     <input
+                       type="file"
+                       accept=".csv, .xls, .xlsx"
+                       onChange={handleFileChange}
+                       disabled={uploading}
+                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                     />
+                     <Upload className="size-8 text-slate-400 mb-2" />
+                     <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                       Drag and drop or click to choose file
+                     </p>
+                     <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-1">
+                       CSV, XLS, XLSX up to 10MB
+                     </p>
+                   </div>
+
+                   <div className="flex gap-3 justify-end pt-2">
+                     <button
+                       type="button"
+                       disabled={uploading}
+                       onClick={() => setShowUploadModal(false)}
+                       className="py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                     >
+                       Cancel
+                     </button>
+                   </div>
+                 </form>
+               )}
+
+               {!loadingPreview && previewData && (
+                 <form onSubmit={handleUploadSubmit} className="space-y-5 pt-4">
+                   {/* File Stats Cards */}
+                   <div className="grid grid-cols-4 gap-3">
+                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80 text-center">
+                       <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold uppercase tracking-wider">Total Rows</p>
+                       <p className="text-base font-extrabold text-slate-805 dark:text-white mt-0.5">{previewData.totalRows}</p>
+                     </div>
+                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80 text-center">
+                       <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold uppercase tracking-wider">With Phone</p>
+                       <p className="text-base font-extrabold text-blue-600 mt-0.5">{previewData.validLeadsCount}</p>
+                     </div>
+                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80 text-center">
+                       <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold uppercase tracking-wider">Unique</p>
+                       <p className="text-base font-extrabold text-indigo-600 mt-0.5">{previewData.uniqueLeadsCount}</p>
+                     </div>
+                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800/80 text-center">
+                       <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold uppercase tracking-wider">Brand New</p>
+                       <p className="text-base font-extrabold text-emerald-600 mt-0.5">{previewData.newLeadsCount}</p>
+                     </div>
+                   </div>
+
+                   {/* Preview Table */}
+                   <div>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">First few matching rows:</p>
+                     <div className="overflow-x-auto rounded-xl border border-slate-150 dark:border-slate-800 max-h-[140px] overflow-y-auto">
+                       <table className="w-full text-[11px] text-left border-collapse">
+                         <thead>
+                           <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                             <th className="px-3 py-2">Name</th>
+                             <th className="px-3 py-2">Phone</th>
+                             <th className="px-3 py-2">Email</th>
+                             <th className="px-3 py-2">Loan Type</th>
+                           </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                           {previewData.preview.map((lead: any, i: number) => (
+                             <tr key={i} className="text-slate-700 dark:text-slate-350 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                               <td className="px-3 py-2 font-semibold">{lead.customerName || "Unnamed"}</td>
+                               <td className="px-3 py-2">{lead.phone}</td>
+                               <td className="px-3 py-2 opacity-80">{lead.email || "-"}</td>
+                               <td className="px-3 py-2 uppercase tracking-wide opacity-80">{lead.loanType || "Cold Calling"}</td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     </div>
+                   </div>
+
+                   {/* Custom limit settings */}
+                   <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+                     <div className="flex items-center justify-between">
+                       <label htmlFor="import-limit-input" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                         Limit Import Size:
+                       </label>
+                       <span className="text-[10px] font-bold text-slate-500">
+                         Unique: {previewData.uniqueLeadsCount} leads available
+                       </span>
+                     </div>
+                     
+                     <div className="flex gap-2">
+                       <div className="relative flex-1">
+                         <input
+                           id="import-limit-input"
+                           type="number"
+                           min="1"
+                           max={previewData.uniqueLeadsCount}
+                           value={importLimit}
+                           onChange={(e) => setImportLimit(e.target.value)}
+                           className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500 font-semibold"
+                           placeholder="Import all leads"
+                         />
+                         {importLimit && parseInt(importLimit, 10) === previewData.uniqueLeadsCount && (
+                           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">All</span>
+                         )}
+                       </div>
+
+                       <div className="flex gap-1.5">
+                         <button
+                           type="button"
+                           onClick={() => setImportLimit("1000")}
+                           className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                             importLimit === "1000"
+                               ? "bg-blue-600 border-blue-600 text-white"
+                               : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                           }`}
+                         >
+                           1k
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => setImportLimit("3000")}
+                           className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                             importLimit === "3000"
+                               ? "bg-blue-600 border-blue-600 text-white"
+                               : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                           }`}
+                         >
+                           3k
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => setImportLimit(String(previewData.uniqueLeadsCount))}
+                           className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                             importLimit === String(previewData.uniqueLeadsCount)
+                               ? "bg-blue-600 border-blue-600 text-white"
+                               : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                           }`}
+                         >
+                           All ({previewData.uniqueLeadsCount})
+                         </button>
+                       </div>
+                     </div>
+                     <p className="text-[10px] text-slate-500">
+                       Only the first {importLimit ? parseInt(importLimit) || 0 : "all"} leads from the spreadsheet will be processed and imported in the background. Duplicate phone numbers are automatically skipped.
+                     </p>
+                   </div>
+
+                   <div className="flex gap-3 justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                     <button
+                       type="button"
+                       disabled={uploading}
+                       onClick={handleResetUpload}
+                       className="py-2 px-4 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                     >
+                       Choose Different File
+                     </button>
+                     
+                     <div className="flex gap-3">
+                       <button
+                         type="button"
+                         disabled={uploading}
+                         onClick={() => {
+                           setShowUploadModal(false);
+                           handleResetUpload();
+                         }}
+                         className="py-2 px-4 text-slate-500 hover:text-slate-750 dark:hover:text-slate-300 text-xs font-semibold transition-all cursor-pointer"
+                       >
+                         Cancel
+                       </button>
+                       
+                       <button
+                         type="submit"
+                         disabled={uploading || !file || !importLimit || parseInt(importLimit, 10) <= 0}
+                         className="py-2 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                       >
+                         {uploading ? (
+                           <>
+                             <Loader2 className="size-4 animate-spin" /> Synchronizing...
+                           </>
+                         ) : (
+                           `Confirm Import of ${importLimit ? parseInt(importLimit) || 0 : "All"} Leads`
+                         )}
+                       </button>
+                     </div>
+                   </div>
+                 </form>
+               )}
             </div>
           </div>
         )}
