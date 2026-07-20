@@ -19,7 +19,7 @@ class KeyLoader {
             this.publicKey =
                 process.env.RSA_PUBLIC_KEY.replace(/\\n/g, "\n");
 
-            console.log("RSA keys loaded from ENV");
+            if (process.env.NODE_ENV !== 'test') console.log("RSA keys loaded from ENV");
 
             return;
         }
@@ -38,7 +38,7 @@ class KeyLoader {
         this.privateKey =
             fs.readFileSync(privatePath, "utf8");
 
-        console.log("RSA keys loaded from PEM files");
+        if (process.env.NODE_ENV !== 'test') console.log("RSA keys loaded from PEM files");
 
     }
 
