@@ -138,7 +138,12 @@ class WalletService {
                 session.endSession();
             }
             // Fallback for environment without replication support
-            if (error.message && error.message.includes("does not support transactions")) {
+            const isNoTransactionSupport = error.message && (
+                error.message.includes("does not support transactions") ||
+                error.message.includes("replica set member or mongos") ||
+                error.message.includes("Transaction numbers")
+            );
+            if (isNoTransactionSupport) {
                 // Deduct sender balance
                 await walletRepository.updateBalance(senderUserId, -amount);
 
