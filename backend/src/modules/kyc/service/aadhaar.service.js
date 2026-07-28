@@ -8,16 +8,24 @@ class AadhaarService {
         }
 
         if (config.aadhaar.mockMode) {
-            if (aadhaarNumber === "999999990019") {
+            // Pre-registered test Aadhaar numbers for manual testing & frontend integration
+            const mockIdentities = {
+                "999999990019": { name: "Varsha ", dob: "1998-05-15", gender: "FEMALE" },
+                "999999990020": { name: "Rahul ", dob: "1992-08-20", gender: "MALE" },
+                "999999990021": { name: "Priya ", dob: "1995-12-10", gender: "FEMALE" }
+            };
+
+            const isTestNumber = mockIdentities[aadhaarNumber] || aadhaarNumber.startsWith("9999");
+            if (isTestNumber) {
                 if (process.env.NODE_ENV !== "test") {
-                    console.log(`[MOCK Aadhaar OTP] Sent OTP to mobile linked with Aadhaar ${aadhaarNumber}. Use OTP: 123456`);
+                    console.log(`[MOCK Aadhaar OTP] Sent OTP for Aadhaar ${aadhaarNumber}. Use OTP: 123456`);
                 }
                 return {
-                    txnId: "mock-txn-999999990019",
+                    txnId: `mock-txn-${aadhaarNumber}`,
                     message: "OTP sent successfully to registered mobile number (Mock Mode)"
                 };
             }
-            throw new AppError("Aadhaar number not registered in Sandbox environment. Use 999999990019 for testing.", 400);
+            throw new AppError("Aadhaar number not registered in Sandbox environment. Use 999999990019, 999999990020, or 999999990021 for testing.", 400);
         }
 
         try {
@@ -53,17 +61,30 @@ class AadhaarService {
         }
 
         if (config.aadhaar.mockMode) {
-            if (txnId !== "mock-txn-999999990019") {
+            if (!txnId || !txnId.startsWith("mock-txn-")) {
                 throw new AppError("Invalid or expired Aadhaar verification transaction", 400);
             }
             if (otp !== "123456") {
                 throw new AppError("Invalid OTP. Try 123456 in mock mode.", 400);
             }
 
+            const rawNum = txnId.replace("mock-txn-", "");
+            const mockIdentities = {
+                "999999990019": { name: "Varsha Sharma", dob: "1998-05-15", gender: "FEMALE" },
+                "999999990020": { name: "Rahul Verma", dob: "1992-08-20", gender: "MALE" },
+                "999999990021": { name: "Priya Patel", dob: "1995-12-10", gender: "FEMALE" }
+            };
+
+            const identity = mockIdentities[rawNum] || {
+                name: "Test User Profile",
+                dob: "1995-01-01",
+                gender: "MALE"
+            };
+
             return {
-                name: "Varsha Sharma",
-                dob: "1998-05-15",
-                gender: "FEMALE",
+                name: identity.name,
+                dob: identity.dob,
+                gender: identity.gender,
                 address: {
                     house: "42",
                     street: "Silicon Valley Road",
@@ -73,7 +94,7 @@ class AadhaarService {
                     state: "Karnataka",
                     pincode: "560066"
                 },
-                aadhaarLast4: "0019"
+                aadhaarLast4: rawNum.slice(-4)
             };
         }
 
