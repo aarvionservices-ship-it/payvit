@@ -10,9 +10,9 @@ class AadhaarService {
         if (config.aadhaar.mockMode) {
             // Pre-registered test Aadhaar numbers for manual testing & frontend integration
             const mockIdentities = {
-                "999999990019": { name: "Varsha ", dob: "1998-05-15", gender: "FEMALE" },
-                "999999990020": { name: "Rahul ", dob: "1992-08-20", gender: "MALE" },
-                "999999990021": { name: "Priya ", dob: "1995-12-10", gender: "FEMALE" }
+                "999999990019": { name: "Varsha Sharma", dob: "1998-05-15", gender: "FEMALE" },
+                "999999990020": { name: "Rahul Verma", dob: "1992-08-20", gender: "MALE" },
+                "999999990021": { name: "Priya Patel", dob: "1995-12-10", gender: "FEMALE" }
             };
 
             const isTestNumber = mockIdentities[aadhaarNumber] || aadhaarNumber.startsWith("9999");
