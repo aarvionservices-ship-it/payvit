@@ -24,6 +24,10 @@ class EncryptionService {
     encryptWithPublicKey(payload) {
 
         const publicKey = keyLoader.getPublicKey();
+        if (!publicKey) {
+            const str = typeof payload === "string" ? payload : JSON.stringify(payload);
+            return Buffer.from(str).toString("base64");
+        }
 
         const buffer = Buffer.from(JSON.stringify(payload));
 

@@ -18,4 +18,19 @@ module.exports = {
         publicKey: process.env.RSA_PUBLIC_KEY_PATH,
     },
     frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173", // Base URL for reset links, etc.
+    encryptionKey: process.env.BANK_ACCOUNT_ENCRYPTION_KEY || "payvit_bank_key_32bytes_default!",
+    aadhaar: {
+        apiKey: process.env.AADHAAR_API_KEY || "none",
+        baseUrl: process.env.AADHAAR_BASE_URL || "https://api.sandbox.co.in",
+        mockMode: !process.env.AADHAAR_API_KEY || process.env.AADHAAR_API_KEY === "none"
+    },
+    kyc: {
+        unverifiedDailyLimit: Number(process.env.KYC_UNVERIFIED_DAILY_LIMIT) || 10000,
+        verifiedDailyLimit: Number(process.env.KYC_VERIFIED_DAILY_LIMIT) || 100000
+    },
+    pan: {
+        apiKey: process.env.PAN_API_KEY || "none",
+        baseUrl: process.env.PAN_BASE_URL || "https://api.sandbox.co.in",
+        mockMode: !process.env.PAN_API_KEY || process.env.PAN_API_KEY === "none"
+    }
 };

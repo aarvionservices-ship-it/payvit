@@ -8,7 +8,10 @@
     "keys:generate": "node ./scripts/generateKeys.js",
     "data:import": "node ./seeders/seedCards.js",
     "data:destroy": "node ./seeders/seedCards.js -d",
-    "db:seed": "node ./seeders/seedMaster.js"
+    "db:seed": "node ./seeders/seedMaster.js",
+    "test": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles",
+    "test:coverage": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --coverage",
+    "test:watch": "cross-env NODE_ENV=test jest --runInBand --detectOpenHandles --watch"
   },
   "keywords": [],
   "author": "",
@@ -40,8 +43,11 @@
     "xss": "^1.0.15"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "^10.0.3",
+    "jest": "^30.4.2",
     "nodemon": "^3.1.14",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "supertest": "^7.2.2"
   }
 }

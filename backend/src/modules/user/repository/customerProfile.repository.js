@@ -10,11 +10,11 @@ class CustomerProfileRepository {
         return await CustomerProfile.create(data);
     }
 
-    async update(userId, data) {
+    async update(userId, data, options = {}) {
         return await CustomerProfile.findOneAndUpdate(
             { userId },
             { $set: data },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true, ...options }
         );
     }
 
