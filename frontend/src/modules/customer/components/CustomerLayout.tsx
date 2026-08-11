@@ -9,7 +9,8 @@ import {
   UserCircle, 
   Bell,
   Search,
-  MoreHorizontal
+  MoreHorizontal,
+  Wallet
 } from 'lucide-react';
 
 export default function CustomerLayout() {
@@ -19,6 +20,7 @@ export default function CustomerLayout() {
   const navItems = [
     { path: '/customer', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/customer/offers', icon: Briefcase, label: 'Browse Offers' },
+    { path: '/customer/wallet', icon: Wallet, label: 'Wallet' },
     { path: '/customer/favorites', icon: Heart, label: 'Saved Offers' },
     { path: '/customer/applications', icon: FileText, label: 'My Applications' },
     { path: '/customer/profile', icon: UserCircle, label: 'Profile' },
@@ -32,7 +34,7 @@ export default function CustomerLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-black-50 flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 fixed h-full z-10">
         <div className="p-6 flex items-center gap-3">
