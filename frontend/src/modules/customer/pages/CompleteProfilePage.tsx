@@ -29,7 +29,7 @@ const profileSchema = z.object({
     gender: z.enum(["male", "female", "other"]),
     occupation: z.string().min(1, "Occupation is required"),
     annualIncome: z.number({ message: "Income must be a number" }).min(0, "Income must be a positive number"),
-    panNumber: z.string().optional().refine((val) => !val || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val), "Invalid PAN format"),
+    panNumber: z.string().optional().transform((val) => val?.toUpperCase()).refine((val) => !val || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val), "Invalid PAN format"),
     aadhaarNumber: z.string().regex(/^[2-9]{1}[0-9]{11}$/, "Invalid Aadhaar format"),
     street: z.string().min(1, "Street is required"),
     city: z.string().min(1, "City is required"),
