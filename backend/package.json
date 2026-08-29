@@ -6,7 +6,7 @@
     "start": "node ./src/server.js",
     "dev": "nodemon ./src/server.js",
     "test": "jest --runInBand --forceExit",
-    "test:pan": "jest tests/panKyc.test.js --runInBand --forceExit --verbose",
+    "test:face": "jest tests/faceVerification.test.js --runInBand --forceExit --verbose",
     "test:video": "jest tests/videoKyc.test.js --runInBand --forceExit --verbose",
     "test:socket": "jest tests/videoKycSocket.test.js --runInBand --forceExit --verbose --testTimeout=35000",
     "keys:generate": "node ./scripts/generateKeys.js",

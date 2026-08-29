@@ -3,7 +3,6 @@ const router = express.Router();
 
 const authenticate            = require("../../../middlewares/auth.middleware");
 const kycController           = require("../controller/kyc.controller");
-const panKycController        = require("../controller/panKyc.controller");
 const videoKycController      = require("../controller/videoKyc.controller");
 const faceVerificationController = require("../controller/faceVerification.controller");
 
@@ -16,22 +15,6 @@ router.post("/verify-otp", authenticate, kycController.verifyOtp);
 
 // GET  /api/v1/kyc/status
 router.get("/status", authenticate, kycController.getStatus);
-
-// ─── PAN KYC (form-based) ────────────────────────────────────────────────────
-// POST /api/v1/kyc/pan/start-session
-router.post("/pan/start-session", authenticate, panKycController.startSession);
-
-// GET  /api/v1/kyc/pan/session/:sessionId
-router.get("/pan/session/:sessionId", authenticate, panKycController.getSession);
-
-// POST /api/v1/kyc/pan/verify-details — body: { sessionId, panNumber, nameOnPAN, answers }
-router.post("/pan/verify-details", authenticate, panKycController.verifyDetails);
-
-// POST /api/v1/kyc/pan/verify-otp     — body: { sessionId, otp }
-router.post("/pan/verify-otp", authenticate, panKycController.verifyOtp);
-
-// POST /api/v1/kyc/pan/resend-otp     — body: { sessionId }
-router.post("/pan/resend-otp", authenticate, panKycController.resendOtp);
 
 // ─── Video KYC AI Agent ───────────────────────────────────────────────────────
 // POST /api/v1/kyc/video/start-session
