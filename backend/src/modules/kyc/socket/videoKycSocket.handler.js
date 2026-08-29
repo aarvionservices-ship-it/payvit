@@ -166,10 +166,11 @@ function registerVideoKycNamespace(io) {
                 }
                 if (!sessionId) return _emitError(socket, "MISSING_SESSION_ID", "sessionId is required.");
                 if (!image)     return _emitError(socket, "MISSING_IMAGE", "image (base64) is required.");
-                if (!task)      return _emitError(socket, "MISSING_TASK", "task is required: 'pan_ocr' or 'liveness'.");
+                const validTasks = ["pan_ocr", "liveness", "face_match", "anti_spoof"];
+                if (!task)      return _emitError(socket, "MISSING_TASK", `task is required: ${validTasks.join(", ")}.`);
 
-                if (!["pan_ocr", "liveness"].includes(task)) {
-                    return _emitError(socket, "INVALID_TASK", "task must be 'pan_ocr' or 'liveness'.");
+                if (!validTasks.includes(task)) {
+                    return _emitError(socket, "INVALID_TASK", `task must be one of: ${validTasks.join(", ")}.`);
                 }
 
                 socket.emit("agent_typing", {});

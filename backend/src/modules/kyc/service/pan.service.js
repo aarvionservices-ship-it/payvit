@@ -153,16 +153,18 @@ class PanService {
         }
 
         // ── Validate PAN format ─────────────────────────────────────────────
-        const normalised = (panNumber || "").trim().toUpperCase();
-        if (!PAN_REGEX.test(normalised)) {
+        const trimmed = (panNumber || "").trim();
+        if (!PAN_REGEX.test(trimmed)) {
             throw new AppError("Invalid PAN number format. Expected format: ABCDE1234F", 400);
         }
+        const normalised = trimmed.toUpperCase();
 
         // ── Duplicate PAN check ─────────────────────────────────────────────
         // Ensure the same PAN isn't already verified by another account
         const allKycs = await Kyc.find({ panVerified: true });
         for (const k of allKycs) {
-            if (k.getDecryptedPAN() === normalised && k.userId !== session.userId) {
+            const dec = k.getDecryptedPAN();
+            if ((dec === normalised || (k.panLast4 === normalised.slice(-4) && k.panEncrypted)) && k.userId !== session.userId) {
                 throw new AppError("This PAN is already linked to another account.", 400);
             }
         }

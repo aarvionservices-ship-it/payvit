@@ -129,6 +129,35 @@ const MOCK_IMAGE_RESPONSES = {
         livenessPassed: true,
         confidence:     0.95,
         reason:         "Live human face detected with high confidence."
+    },
+    anti_spoof: {
+        success:         true,
+        isSpoofDetected: false,
+        spoofRiskScore:  0.05,
+        passed:          true,
+        indicators:      [],
+        quality: {
+            brightness:    85,
+            sharpness:     90,
+            faceDetected:  true,
+            multipleFaces: false
+        },
+        reason: "Clean physical biometric capture. No screen, paper, mask, or deepfake artifacts."
+    },
+    face_match: {
+        success:         true,
+        isMatch:         true,
+        similarityScore: 0.92,
+        confidence:      0.94,
+        threshold:       0.75,
+        details:         "Strong facial landmark alignment: eyes, nose bridge, jawline, and facial symmetry match."
+    },
+    active_liveness: {
+        success:         true,
+        challengePassed: true,
+        confidence:      0.96,
+        actionDetected:  "blink",
+        reason:          "User successfully completed the active challenge."
     }
 };
 
@@ -280,16 +309,17 @@ class VideoKycAgentService {
     }
 
     /**
-     * Analyses an uploaded image for PAN OCR or liveness detection.
+     * Analyses an uploaded single image for PAN OCR, passive liveness, or anti-spoof.
      *
      * @param {string} base64Image  - Base64-encoded image (without data URI prefix)
      * @param {string} mimeType     - e.g. "image/jpeg", "image/png"
-     * @param {"pan_ocr"|"liveness"} task
+     * @param {"pan_ocr"|"liveness"|"anti_spoof"|"active_liveness"} task
+     * @param {object} [options]    - Additional task metadata (e.g. expectedAction)
      * @returns {Promise<object>}
      */
-    async analyseImage(base64Image, mimeType, task) {
+    async analyseImage(base64Image, mimeType, task, options = {}) {
         if (isMockMode()) {
-            return MOCK_IMAGE_RESPONSES[task] || { success: false, reason: "Unknown task" };
+            return MOCK_IMAGE_RESPONSES[task] || { success: false, reason: `Unknown mock task ${task}` };
         }
 
         const genAI  = getGeminiClient();
@@ -315,28 +345,163 @@ Respond ONLY with valid JSON in this exact format (no markdown, no extra text):
 If the image is not a valid PAN card or text is unreadable, respond:
 {"success": false, "reason": "brief explanation"}`;
         } else if (task === "liveness") {
-            prompt = `You are a liveness detection AI for a KYC system.
-Analyse this image and determine if it shows a real, live human face (not a photo of a photo, not a screen, not a mask).
+            prompt = `You are a biometric passive liveness detection AI for a banking KYC system.
+Analyze this image and determine if it shows a live, physical human being present in front of the camera.
+Check for:
+- 3D facial depth and natural skin texture
+- Natural light reflections on the cornea and skin
+- Absense of screen borders, digital moiré patterns, paper cutouts, or masks
 
 Respond ONLY with valid JSON in this exact format (no markdown, no extra text):
-{"success": true, "livenessPassed": true, "confidence": 0.95, "reason": "Live face detected"}
+{"success": true, "livenessPassed": true, "confidence": 0.95, "reason": "Live human face verified"}
 
-If liveness check fails or no face is detected:
-{"success": true, "livenessPassed": false, "confidence": 0.1, "reason": "brief reason"}`;
+If liveness fails (e.g., photo of a screen, printed paper photo, mannequin/mask, or no face detected):
+{"success": true, "livenessPassed": false, "confidence": 0.15, "reason": "brief reason"}`;
+        } else if (task === "anti_spoof") {
+            prompt = `You are an AI biometric anti-spoofing and presentation attack detection (PAD) analyzer for a fintech platform.
+Examine this selfie image for presentation attacks, digital spoofs, and physical bypasses:
+1. Screen replay attacks (computer monitor, mobile screen, tablet LCD, moiré banding, reflection glares)
+2. Printed paper attacks (paper edges, matte reflection, folded photo)
+3. 3D masks, silicone prosthetics, or cutouts around eyes/mouth
+4. Deepfake or AI generation artifacts (unnatural eye pupils, blurred skin blending, distortion)
+5. Multiple faces or face truncation
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "success": true,
+  "passed": true,
+  "isSpoofDetected": false,
+  "spoofRiskScore": 0.05,
+  "indicators": [],
+  "quality": {
+    "brightness": 85,
+    "sharpness": 90,
+    "faceDetected": true,
+    "multipleFaces": false
+  },
+  "reason": "Authentic physical face capture without spoof artifacts."
+}
+
+If spoof or low quality is detected:
+{
+  "success": true,
+  "passed": false,
+  "isSpoofDetected": true,
+  "spoofRiskScore": 0.85,
+  "indicators": ["screen_replay"],
+  "quality": {
+    "brightness": 50,
+    "sharpness": 40,
+    "faceDetected": true,
+    "multipleFaces": false
+  },
+  "reason": "Moiré pattern and screen border detected."
+}`;
+        } else if (task === "active_liveness") {
+            const expectedAction = options.expectedAction || "blink";
+            prompt = `You are an active liveness verification AI for KYC.
+The user was asked to perform the action: "${expectedAction}".
+Analyze this image/frame and verify if the user has performed or is performing this action.
+
+Respond ONLY with valid JSON in this exact format:
+{"success": true, "challengePassed": true, "confidence": 0.95, "actionDetected": "${expectedAction}", "reason": "Action verified successfully"}
+
+If the user did not perform the action:
+{"success": true, "challengePassed": false, "confidence": 0.2, "actionDetected": "none", "reason": "Action ${expectedAction} not detected"}`;
         } else {
             throw new Error(`Unknown image analysis task: ${task}`);
         }
 
         const result = await model.generateContent([prompt, imagePart]);
         const text   = result.response.text().trim();
-
-        // Strip markdown code fences if Gemini wraps the JSON
         const cleaned = text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
 
         try {
             return JSON.parse(cleaned);
         } catch {
             throw new Error(`Gemini returned unparseable response for task ${task}: ${text}`);
+        }
+    }
+
+    /**
+     * Compares two face images (e.g. captured selfie vs PAN card / Aadhaar photo).
+     *
+     * @param {string} selfieBase64
+     * @param {string} selfieMime
+     * @param {string} documentBase64
+     * @param {string} documentMime
+     * @param {number} [threshold=0.75]
+     * @returns {Promise<object>}
+     */
+    async compareFaces(selfieBase64, selfieMime, documentBase64, documentMime, threshold = 0.75) {
+        if (isMockMode()) {
+            return {
+                ...MOCK_IMAGE_RESPONSES.face_match,
+                threshold
+            };
+        }
+
+        const genAI  = getGeminiClient();
+        const model  = genAI.getGenerativeModel({ model: config.gemini.model });
+
+        const selfiePart = {
+            inlineData: {
+                data:     selfieBase64,
+                mimeType: selfieMime || "image/jpeg"
+            }
+        };
+
+        const docPart = {
+            inlineData: {
+                data:     documentBase64,
+                mimeType: documentMime || "image/jpeg"
+            }
+        };
+
+        const prompt = `You are an advanced biometric face-matching AI for banking KYC identity verification.
+Compare the person in Image 1 (Live Selfie) with the person on the identity document in Image 2 (PAN / Aadhaar card photo).
+
+Analyze:
+1. Facial bone structure, jawline shape, and facial symmetry
+2. Distance and geometry between eyes, nose base, and mouth corners
+3. Ear shape, eyebrow arch, and distinct facial landmarks
+4. Account for age variations, lighting differences, camera angles, and glasses
+
+Match Threshold: ${threshold} (Similarity score >= ${threshold} is considered a match).
+
+Respond ONLY with valid JSON in this exact format (no markdown, no additional text):
+{
+  "success": true,
+  "isMatch": true,
+  "similarityScore": 0.88,
+  "confidence": 0.92,
+  "threshold": ${threshold},
+  "details": "High confidence match across facial geometry and ocular landmarks."
+}
+
+If the faces do NOT match:
+{
+  "success": true,
+  "isMatch": false,
+  "similarityScore": 0.32,
+  "confidence": 0.95,
+  "threshold": ${threshold},
+  "details": "Different facial structure and nose-jawline dimensions."
+}`;
+
+        const result  = await model.generateContent([prompt, selfiePart, docPart]);
+        const text    = result.response.text().trim();
+        const cleaned = text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
+
+        try {
+            const parsed = JSON.parse(cleaned);
+            parsed.isMatch = typeof parsed.similarityScore === "number"
+                ? parsed.similarityScore >= threshold
+                : !!parsed.isMatch;
+            parsed.threshold = threshold;
+            return parsed;
+        } catch {
+            throw new Error(`Gemini returned unparseable face comparison response: ${text}`);
         }
     }
 

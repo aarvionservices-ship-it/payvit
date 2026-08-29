@@ -302,7 +302,7 @@ class VideoKycService {
         return { agentMessage: agentReply, stage: newStage, done, nextAction };
     }
 
-    // ─── 3. Upload Image (PAN OCR or Liveness) ────────────────────────────────
+    // ─── 3. Upload Image (PAN OCR, Liveness, Anti-Spoof, Face Match) ──────────
     /**
      * Accepts a base64 image and runs Gemini Vision to extract PAN or check liveness.
      *
@@ -310,18 +310,19 @@ class VideoKycService {
      * @param {string} userId
      * @param {string} base64Image   - Raw base64 (no data URI prefix)
      * @param {string} mimeType      - "image/jpeg" | "image/png" | "image/webp"
-     * @param {"pan_ocr"|"liveness"} task
+     * @param {"pan_ocr"|"liveness"|"face_match"|"anti_spoof"} task
      * @param {string} ipAddress
      * @returns {{ agentMessage, stage, extractedData }}
      */
     async uploadImage(sessionId, userId, base64Image, mimeType, task, ipAddress) {
         const session = await this._getActiveSession(sessionId, userId);
 
-        if (!["pan_ocr", "liveness"].includes(task)) {
-            throw new AppError("Invalid task. Use 'pan_ocr' or 'liveness'.", 400);
+        const validTasks = ["pan_ocr", "liveness", "face_match", "anti_spoof"];
+        if (!validTasks.includes(task)) {
+            throw new AppError(`Invalid task. Use one of: ${validTasks.join(", ")}.`, 400);
         }
 
-        // Stage guard: pan_ocr only valid at PAN_CAPTURE; liveness only at LIVENESS_CHECK
+        // Stage guard: pan_ocr only valid at PAN_CAPTURE; liveness/face_match/anti_spoof valid at LIVENESS_CHECK
         const expectedStage = task === "pan_ocr" ? "PAN_CAPTURE" : "LIVENESS_CHECK";
         if (session.stage !== expectedStage) {
             throw new AppError(
@@ -340,7 +341,7 @@ class VideoKycService {
         if (!visionResult.success) {
             const agentMessage = task === "pan_ocr"
                 ? `I couldn't read your PAN card clearly. ${visionResult.reason || "Please try again with better lighting."}`
-                : `Liveness check failed. ${visionResult.reason || "Please ensure your face is clearly visible."}`;
+                : `Biometric verification failed. ${visionResult.reason || "Please ensure your face is clearly visible."}`;
 
             session.agentLog.push({ role: "agent", message: agentMessage, stage: session.stage, timestamp: new Date() });
             await session.save();
@@ -376,6 +377,46 @@ class VideoKycService {
                 ipAddress
             );
 
+        } else if (task === "anti_spoof") {
+            if (visionResult.isSpoofDetected || visionResult.passed === false) {
+                const msg = `Anti-spoof check flagged: ${visionResult.reason || "Spoof attempt detected"}. Please ensure you are directly facing the camera without screens or masks.`;
+                session.agentLog.push({ role: "agent", message: msg, stage: session.stage, timestamp: new Date() });
+                await session.save();
+                return { agentMessage: msg, stage: session.stage, extractedData: null };
+            }
+
+            session.antiSpoof = {
+                passed:          true,
+                riskScore:       visionResult.spoofRiskScore || 0.05,
+                isSpoofDetected: false,
+                indicators:      visionResult.indicators || [],
+                quality:         visionResult.quality || {},
+                checkedAt:       new Date()
+            };
+            agentMessage = "Anti-spoof check passed! Physical face verified.";
+            newStage     = session.stage;
+            extractedData = { antiSpoofPassed: true };
+
+        } else if (task === "face_match") {
+            if (!visionResult.isMatch) {
+                const msg = `Face match failed: ${visionResult.details || "Face does not match the identity document"}.`;
+                session.agentLog.push({ role: "agent", message: msg, stage: session.stage, timestamp: new Date() });
+                await session.save();
+                return { agentMessage: msg, stage: session.stage, extractedData: null };
+            }
+
+            session.faceMatch = {
+                isMatched:       true,
+                similarityScore: visionResult.similarityScore || 0.90,
+                confidence:      visionResult.confidence || 0.92,
+                threshold:       visionResult.threshold || 0.75,
+                matchedAt:       new Date(),
+                details:         visionResult.details
+            };
+            agentMessage = "Face match confirmed with PAN identity!";
+            newStage     = session.stage;
+            extractedData = { faceMatched: true, similarityScore: session.faceMatch.similarityScore };
+
         } else {
             // Liveness
             if (!visionResult.livenessPassed) {
@@ -387,6 +428,15 @@ class VideoKycService {
 
             session.livenessVerified  = true;
             session.livenessCheckedAt = new Date();
+            session.livenessDetails   = {
+                score:         visionResult.confidence || 0.95,
+                confidence:    visionResult.confidence || 0.95,
+                challengeType: "passive",
+                reason:        visionResult.reason || "Live face detected"
+            };
+            session.selfieCaptured    = true;
+            session.selfieCapturedAt  = new Date();
+
             session.steps.liveness.status      = "completed";
             session.steps.liveness.completedAt = new Date();
 

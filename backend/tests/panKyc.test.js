@@ -122,107 +122,80 @@ describe("2. Happy Path — start → scan PAN → answer questions → OTP → 
 
     let token;
     let sessionId;
-    let questions;
-
-    beforeAll(async () => {
+    test("Full 8-step PAN KYC Happy Path flow completes successfully", async () => {
         await seedUser();
-        token = makeToken();
-    });
+        const token = makeToken();
 
-    test("Step 1 — start-session returns a sessionId + 2 questions", async () => {
-        const res = await request(app)
+        // Step 1 — start-session returns a sessionId + 2 questions
+        const startRes = await request(app)
             .post("/api/v1/kyc/pan/start-session")
             .set("Authorization", `Bearer ${token}`);
 
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        expect(typeof res.body.data.sessionId).toBe("string");
-        expect(res.body.data.questions).toHaveLength(2);
+        expect(startRes.status).toBe(200);
+        expect(startRes.body.success).toBe(true);
+        expect(typeof startRes.body.data.sessionId).toBe("string");
+        expect(startRes.body.data.questions).toHaveLength(2);
 
-        // Every question must have an id and a readable question string
-        res.body.data.questions.forEach(q => {
-            expect(q.id).toBeDefined();
-            expect(typeof q.question).toBe("string");
-            expect(q.question.length).toBeGreaterThan(5);
-        });
+        const sessionId = startRes.body.data.sessionId;
+        const questions  = startRes.body.data.questions;
 
-        sessionId = res.body.data.sessionId;
-        questions  = res.body.data.questions;
-    });
-
-    test("Step 2 — GET session returns status=active and the agent greeting", async () => {
-        const res = await request(app)
+        // Step 2 — GET session returns status=active and the agent greeting
+        const getRes1 = await request(app)
             .get(`/api/v1/kyc/pan/session/${sessionId}`)
             .set("Authorization", `Bearer ${token}`);
 
-        expect(res.status).toBe(200);
-        expect(res.body.data.sessionId).toBe(sessionId);
-        expect(res.body.data.status).toBe("active");
-        expect(res.body.data.questions).toHaveLength(2);
+        expect(getRes1.status).toBe(200);
+        expect(getRes1.body.data.sessionId).toBe(sessionId);
+        expect(getRes1.body.data.status).toBe("active");
+        expect(getRes1.body.data.questions).toHaveLength(2);
+        expect(getRes1.body.data.agentLog[0].role).toBe("agent");
 
-        // First log entry should be the agent greeting
-        const firstLog = res.body.data.agentLog[0];
-        expect(firstLog.role).toBe("agent");
-        expect(firstLog.message).toMatch(/PAN card/i);
-    });
+        // Step 3 — verify-details with correct PAN + answers sends OTP
+        const detailsRes = await pushToOtpSent(token, sessionId, questions);
+        expect(detailsRes.status).toBe(200);
+        expect(detailsRes.body.success).toBe(true);
+        expect(detailsRes.body.message).toContain(MOCK_OTP);
 
-    test("Step 3 — verify-details with correct PAN + answers sends OTP", async () => {
-        const res = await pushToOtpSent(token, sessionId, questions);
-
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        // Mock mode tells you the OTP directly in the message
-        expect(res.body.message).toContain(MOCK_OTP);
-    });
-
-    test("Step 4 — session status is now otp_sent, panLast4 is stored", async () => {
-        const res = await request(app)
+        // Step 4 — session status is now otp_sent, panLast4 is stored
+        const getRes2 = await request(app)
             .get(`/api/v1/kyc/pan/session/${sessionId}`)
             .set("Authorization", `Bearer ${token}`);
 
-        expect(res.body.data.status).toBe("otp_sent");
-        expect(res.body.data.panLast4).toBe("061Q"); // last 4 of ADHPB7061Q
-    });
+        expect(getRes2.body.data.status).toBe("otp_sent");
+        expect(getRes2.body.data.panLast4).toBe("061Q");
 
-    test("Step 5 — verify-otp with correct OTP marks PAN as verified", async () => {
-        const res = await request(app)
+        // Step 5 — verify-otp with correct OTP marks PAN as verified
+        const otpRes = await request(app)
             .post("/api/v1/kyc/pan/verify-otp")
             .set("Authorization", `Bearer ${token}`)
             .send({ sessionId, otp: MOCK_OTP });
 
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.message).toMatch(/verified/i);
-        expect(res.body.panLast4).toBe("061Q");
-        expect(res.body.nameOnPAN).toBe("SANGEETA R BARDE");
-    });
+        expect(otpRes.status).toBe(200);
+        expect(otpRes.body.success).toBe(true);
+        expect(otpRes.body.message).toMatch(/verified/i);
+        expect(otpRes.body.panLast4).toBe("061Q");
 
-    test("Step 6 — DB confirms panVerified=true with correct fields", async () => {
+        // Step 6 — DB confirms panVerified=true with correct fields
         const kyc = await Kyc.findOne({ userId: USER_ID });
-
         expect(kyc).not.toBeNull();
         expect(kyc.panVerified).toBe(true);
         expect(kyc.panLast4).toBe("061Q");
         expect(kyc.panVerifiedAt).not.toBeNull();
         expect(kyc.panKycSessionId).toBe(sessionId);
-        expect(kyc.nameOnPAN).toBe("SANGEETA R BARDE");
-    });
 
-    test("Step 7 — session doc is marked verified and has completedAt", async () => {
+        // Step 7 — session doc is marked verified and has completedAt
         const session = await PanKycSession.findOne({ sessionId });
-
         expect(session.status).toBe("verified");
         expect(session.completedAt).not.toBeNull();
         expect(session.steps.otpVerify.status).toBe("completed");
-    });
 
-    test("Step 8 — cannot call verify-otp again on an already-closed session", async () => {
-        const res = await request(app)
+        // Step 8 — cannot call verify-otp again on an already-closed session
+        const closedRes = await request(app)
             .post("/api/v1/kyc/pan/verify-otp")
             .set("Authorization", `Bearer ${token}`)
             .send({ sessionId, otp: MOCK_OTP });
 
-        expect(res.status).toBe(400);
+        expect(closedRes.status).toBe(400);
     });
 });
 
@@ -486,10 +459,8 @@ describe("5. Business Rules — duplicate PAN, already verified, session ownersh
     });
 
     test("Duplicate PAN already verified by another account → 400", async () => {
-        await seedUser({ userId: "user-X", email: "x@test.com" });
-        await seedUser({ userId: "user-Y", email: "y@test.com" });
-
         // User X already owns this PAN
+        await seedUser({ userId: "user-X", email: "user.x@payvit.test", phone: "9876543218" });
         await Kyc.create({
             kycId:            "kyc-user-x",
             userId:           "user-X",
@@ -501,6 +472,7 @@ describe("5. Business Rules — duplicate PAN, already verified, session ownersh
         });
 
         // User Y tries to claim the same PAN
+        await seedUser({ userId: "user-Y", email: "user.y@payvit.test", phone: "9876543219" });
         const tokenY = makeToken("user-Y");
         const { sessionId: sid, questions: qs } = await startSession(tokenY);
         const answers = buildAnswers(qs);

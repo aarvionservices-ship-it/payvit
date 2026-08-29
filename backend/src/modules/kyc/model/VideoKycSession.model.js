@@ -76,9 +76,45 @@ const videoKycSessionSchema = new mongoose.Schema(
             default: "WELCOME"
         },
 
-        // ── Liveness check ─────────────────────────────────────────────────
+        // ── Liveness & Biometric Verifications ──────────────────────────────
         livenessVerified:  { type: Boolean, default: false },
         livenessCheckedAt: { type: Date, default: null },
+        livenessDetails: {
+            score:         { type: Number, default: null },
+            confidence:    { type: Number, default: null },
+            challengeType: { type: String, default: "passive" },
+            reason:        { type: String, default: null }
+        },
+
+        // ── 1:1 AI Face Match (Selfie vs PAN / Document Photo) ──────────────
+        faceMatch: {
+            isMatched:       { type: Boolean, default: false },
+            similarityScore: { type: Number, default: null },
+            confidence:      { type: Number, default: null },
+            threshold:       { type: Number, default: 0.75 },
+            matchedAt:       { type: Date, default: null },
+            details:         { type: String, default: null }
+        },
+
+        // ── Anti-Spoofing & Presentation Attack Detection ───────────────────
+        antiSpoof: {
+            passed:          { type: Boolean, default: false },
+            riskScore:       { type: Number, default: null },
+            isSpoofDetected: { type: Boolean, default: false },
+            indicators:      { type: [String], default: [] },
+            quality: {
+                brightness:    { type: Number, default: null },
+                sharpness:     { type: Number, default: null },
+                faceDetected:  { type: Boolean, default: false },
+                multipleFaces: { type: Boolean, default: false }
+            },
+            checkedAt:       { type: Date, default: null }
+        },
+
+        // ── Captured Selfie Image Metadata ──────────────────────────────────
+        selfieCaptured:   { type: Boolean, default: false },
+        selfieCapturedAt: { type: Date, default: null },
+        selfieHash:       { type: String, default: null },
 
         // ── PAN data (extracted via Gemini Vision OCR) ──────────────────────
         panEncrypted: { type: String, default: null },  // RSA-encrypted PAN
