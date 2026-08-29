@@ -55,8 +55,33 @@ const kycSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["pending_otp", "otp_sent", "verified", "failed"],
+            enum: ["pending_otp", "otp_sent", "verified", "failed", "pan_pending", "pan_verified"],
             default: "pending_otp"
+        },
+        // ── PAN Verification Fields ─────────────────────────────────────────
+        panEncrypted: {
+            type: String,
+            default: null
+        },
+        panLast4: {
+            type: String,
+            default: null
+        },
+        nameOnPAN: {
+            type: String,
+            default: null
+        },
+        panVerified: {
+            type: Boolean,
+            default: false
+        },
+        panVerifiedAt: {
+            type: Date,
+            default: null
+        },
+        panKycSessionId: {
+            type: String,
+            default: null
         },
         txnId: {
             type: String,
@@ -86,13 +111,22 @@ kycSchema.statics.encryptAadhaar = function (aadhaarNumber) {
     return encrypt(aadhaarNumber);
 };
 
+kycSchema.statics.encryptPAN = function (panNumber) {
+    return encrypt(panNumber);
+};
+
 kycSchema.methods.getDecryptedAadhaar = function () {
     return decrypt(this.aadhaarEncrypted);
+};
+
+kycSchema.methods.getDecryptedPAN = function () {
+    return decrypt(this.panEncrypted);
 };
 
 kycSchema.methods.toSafeJSON = function () {
     const obj = this.toObject();
     delete obj.aadhaarEncrypted;
+    delete obj.panEncrypted;
     delete obj._id;
     delete obj.__v;
     return obj;

@@ -208,16 +208,21 @@ class KycService {
             return {
                 status: "pending_otp",
                 kycVerified: false,
+                panVerified: false,
                 message: "KYC has not been initiated yet."
             };
         }
 
         return {
             status: kyc.status,
-            kycVerified: kyc.status === "verified",
+            kycVerified: kyc.status === "verified" || kyc.status === "pan_verified",
+            panVerified: !!kyc.panVerified,
             nameOnAadhaar: kyc.nameOnAadhaar,
             aadhaarLast4: kyc.aadhaarLast4,
-            verifiedAt: kyc.verifiedAt
+            nameOnPAN: kyc.nameOnPAN,
+            panLast4: kyc.panLast4,
+            verifiedAt: kyc.verifiedAt,
+            panVerifiedAt: kyc.panVerifiedAt
         };
     }
 }

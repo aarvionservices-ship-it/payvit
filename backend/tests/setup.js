@@ -1,5 +1,9 @@
 // Load env variables first, before any app modules are imported
 require("dotenv").config({ quiet: true });
+process.env.NODE_ENV = "test";
+process.env.VIDEO_KYC_MOCK_MODE = "true";
+process.env.PAN_MOCK_MODE = "true";
+process.env.AADHAAR_MOCK_MODE = "true";
 
 // Load RSA keys so decryptRequest middleware does not crash
 // The middleware gracefully falls through when no encrypted payload is present,

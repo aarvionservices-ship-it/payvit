@@ -17,3 +17,8 @@ aarvionpay-backend/keys/*.pem
 aarvionpay-frontend/node_modules/
 aarvionpay-frontend/dist/
 aarvionpay-frontend/.env.local
+
+# Local DB & Temp artifacts
+mongodb-data/
+*.pdf
+backend/logs/
