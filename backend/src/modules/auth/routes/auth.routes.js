@@ -7,11 +7,71 @@ const validate = require("../../../middlewares/validateRequest");
 
 const registerDTO = require("../dto/register.dto");
 const loginDTO = require("../dto/login.dto");
+const { sendOtpDTO, verifyOtpDTO } = require("../dto/otp.dto");
 
 const authMiddleware = require("../../../middlewares/auth.middleware");
 const asyncHandler = require("../../../middlewares/asyncHandler");
 
 const router = express.Router();
+
+router.get(
+    "/device-id",
+    asyncHandler(authController.getDeviceId.bind(authController))
+);
+
+router.post(
+    "/send-registration-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.sendRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/send-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.sendRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/verify-registration-otp",
+    validate(verifyOtpDTO),
+    asyncHandler(authController.verifyRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/verify-otp",
+    validate(verifyOtpDTO),
+    asyncHandler(authController.verifyRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/resend-registration-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.resendRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/resend-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.resendRegistrationOtp.bind(authController))
+);
+
+router.post(
+    "/send-login-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.sendLoginOtp.bind(authController))
+);
+
+router.post(
+    "/resend-login-otp",
+    validate(sendOtpDTO),
+    asyncHandler(authController.resendLoginOtp.bind(authController))
+);
+
+router.post(
+    "/login-otp",
+    validate(verifyOtpDTO),
+    asyncHandler(authController.loginWithOtp.bind(authController))
+);
 
 router.post(
     "/register",

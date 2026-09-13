@@ -29,6 +29,7 @@ const kycRoutes = require("./modules/kyc/routes/kyc.routes");
 
 // Initialize Subscribers
 require("./modules/leadHistory/subscriber/leadHistory.subscriber");
+require("./modules/auth/events/auth.events");
 
 const app = express();
 const allowedOrigins = process.env.CORS_ORIGINS?.split(",") || [];
@@ -57,6 +58,14 @@ app.use(sanitize());
 app.use(rateLimiter);
 
 app.use(requestLogger);
+
+app.get("/", (req, res) => {
+    res.json({
+        success: true,
+        message: "PayVit Backend API is running",
+        version: "1.0.0"
+    });
+});
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);

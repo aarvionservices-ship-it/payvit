@@ -55,6 +55,27 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
+        isEmailVerified: {
+            type: Boolean,
+            default: false
+        },
+        deviceId: {
+            type: String,
+            index: true
+        },
+        devices: [
+            {
+                deviceId: { type: String, required: true },
+                deviceName: String,
+                browser: String,
+                os: String,
+                deviceType: String,
+                userAgent: String,
+                ip: String,
+                lastActive: { type: Date, default: Date.now },
+                registeredAt: { type: Date, default: Date.now }
+            }
+        ],
         resetPasswordToken: String,
         resetPasswordExpires: Date
     },

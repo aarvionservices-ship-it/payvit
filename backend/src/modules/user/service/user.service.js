@@ -160,6 +160,9 @@ class UserService {
             role: "customer"
         });
 
+        const eventBus = require("../../../core/eventBus");
+        eventBus.emit("user.registered", user);
+
         return user;
 
     }

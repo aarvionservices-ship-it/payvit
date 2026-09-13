@@ -35,4 +35,23 @@ module.exports = Joi.object({
             "any.required": "Phone number is required"
         }),
 
+    otp: Joi.string()
+        .trim()
+        .length(6)
+        .regex(/^[0-9]{6}$/)
+        .required()
+        .messages({
+            "string.empty": "Email OTP is required",
+            "string.length": "Email OTP must be exactly 6 digits",
+            "string.pattern.base": "Email OTP must contain 6 numeric digits",
+            "any.required": "Email OTP is required for verification"
+        }),
+
+    deviceId: Joi.string()
+        .optional()
+        .allow("", null)
+        .messages({
+            "string.base": "Device ID must be a valid string"
+        })
+
 });
