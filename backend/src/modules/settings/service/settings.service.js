@@ -14,7 +14,7 @@ class SettingsService {
         return await Settings.findOneAndUpdate(
             { key: 'app_settings' },
             { $set: data },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
     }
 }

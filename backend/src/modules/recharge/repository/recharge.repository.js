@@ -15,7 +15,7 @@ class RechargeRepository {
     }
 
     async updateService(id, updateData) {
-        return await RechargeService.findByIdAndUpdate(id, updateData, { new: true }).lean();
+        return await RechargeService.findByIdAndUpdate(id, updateData, { returnDocument: "after" }).lean();
     }
 
     async deleteService(id) {
@@ -47,7 +47,7 @@ class RechargeRepository {
         return await RechargeHistory.findByIdAndUpdate(id, { 
             status, 
             paymentDetails 
-        }, { new: true }).lean();
+        }, { returnDocument: "after" }).lean();
     }
 }
 

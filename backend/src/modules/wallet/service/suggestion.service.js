@@ -1,5 +1,4 @@
 const transactionRepo = require("../repository/transaction.repository");
-const userRepo = require("../../user/repository/user.repository");
 
 // Curated list of popular banks in India with their IFSC prefix hints
 const POPULAR_BANKS = [

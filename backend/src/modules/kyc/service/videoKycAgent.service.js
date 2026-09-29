@@ -158,6 +158,37 @@ const MOCK_IMAGE_RESPONSES = {
         confidence:      0.96,
         actionDetected:  "blink",
         reason:          "User successfully completed the active challenge."
+    },
+    pan_document_analysis: {
+        success:             true,
+        isOriginal:          true,
+        panNumber:           "ADHPB7061Q",
+        nameOnPAN:           "VARSHA SHARMA",
+        dob:                 "15/05/1998",
+        confidence:          0.98,
+        quality: {
+            brightness:          88,
+            sharpness:           92,
+            cornersVisible:      true,
+            glareDetected:       false,
+            isPhotocopyOrScreen: false
+        },
+        reason: "Valid original physical PAN card detected."
+    },
+    aadhaar_document_analysis: {
+        success:       true,
+        isMasked:      true,
+        aadhaarLast4:  "0019",
+        nameOnAadhaar: "VARSHA SHARMA",
+        dob:           "15/05/1998",
+        gender:        "FEMALE",
+        confidence:    0.96,
+        quality: {
+            brightness:   85,
+            sharpness:    90,
+            textReadable: true
+        },
+        reason: "Valid Aadhaar card with masked numbers detected."
     }
 };
 
@@ -408,6 +439,68 @@ Respond ONLY with valid JSON in this exact format:
 
 If the user did not perform the action:
 {"success": true, "challengePassed": false, "confidence": 0.2, "actionDetected": "none", "reason": "Action ${expectedAction} not detected"}`;
+        } else if (task === "pan_document_analysis") {
+            prompt = `You are an expert Indian KYC document authenticity and OCR analyzer.
+Examine this PAN card photo.
+1. Determine if this is an ORIGINAL PHYSICAL PAN card (check for physical card edges, texture, embossed lettering, holograms vs photocopy / printout / computer or phone screen photo).
+2. Extract PAN number (5 uppercase letters, 4 digits, 1 uppercase letter) and Name on card, DOB if visible.
+3. Check image quality: glare, blur, corners visible.
+
+Respond ONLY with valid JSON in this format:
+{
+  "success": true,
+  "isOriginal": true,
+  "panNumber": "ABCDE1234F",
+  "nameOnPAN": "FULL NAME",
+  "dob": "DD/MM/YYYY",
+  "confidence": 0.95,
+  "quality": {
+    "brightness": 85,
+    "sharpness": 90,
+    "cornersVisible": true,
+    "glareDetected": false,
+    "isPhotocopyOrScreen": false
+  },
+  "reason": "Original physical PAN card verified."
+}
+
+If the image is not an original card (e.g. black and white photocopy, screen replay, tampered, or unreadable):
+{
+  "success": false,
+  "isOriginal": false,
+  "reason": "Clear explanation of why validation failed."
+}`;
+        } else if (task === "aadhaar_document_analysis") {
+            prompt = `You are an expert Indian KYC document validator.
+Analyze this Aadhaar card image (front or back).
+1. Check if it is a valid government-issued Aadhaar card image.
+2. Check if the first 8 digits are masked (XXXX XXXX 1234) or unmasked.
+3. Extract visible details: last 4 digits of Aadhaar, Name, DOB, Gender, Address if visible.
+4. Assess image readability and quality.
+
+Respond ONLY with valid JSON in this format:
+{
+  "success": true,
+  "isMasked": true,
+  "aadhaarLast4": "1234",
+  "nameOnAadhaar": "FULL NAME",
+  "dob": "DD/MM/YYYY",
+  "gender": "MALE/FEMALE/OTHER",
+  "confidence": 0.95,
+  "quality": {
+    "brightness": 85,
+    "sharpness": 88,
+    "textReadable": true
+  },
+  "reason": "Valid Aadhaar card image analyzed."
+}
+
+If invalid or unreadable:
+{
+  "success": false,
+  "isMasked": false,
+  "reason": "Explanation of failure"
+}`;
         } else {
             throw new Error(`Unknown image analysis task: ${task}`);
         }
@@ -512,6 +605,155 @@ If the faces do NOT match:
      */
     getStageGreeting(stage) {
         return MOCK_CHAT_RESPONSES[stage] || MOCK_CHAT_RESPONSES["WELCOME"];
+    }
+
+    // ─── Video Voice Consistency Analysis ─────────────────────────────────────
+
+    /**
+     * Analyse a video clip for voice consistency.
+     * Sends the base64 video as a multimodal input to Gemini and instructs it
+     * to check:
+     *   - Whether the person speaks clearly and states their identity
+     *   - Whether the spoken content is consistent with the user's KYC record
+     *   - Whether the audio/lip sync suggests a live recording (no deepfake)
+     *
+     * @param {string} base64Video   - Raw base64 video
+     * @param {string} mimeType      - "video/webm" | "video/mp4"
+     * @param {{ expectedName: string, sessionId: string, minDuration: number }} context
+     * @returns {{ passed, confidenceScore, transcribedText, details }}
+     */
+    async analyseVideoVoice(base64Video, mimeType, context) {
+        if (isMockMode()) {
+            return {
+                passed:          true,
+                confidenceScore: 0.95,
+                transcribedText: "[MOCK] Voice analysis skipped in mock mode.",
+                details:         "Mock mode — voice consistency assumed passed."
+            };
+        }
+
+        const client = getGeminiClient();
+        const model  = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const videoPart = {
+            inlineData: {
+                data:     base64Video,
+                mimeType: mimeType || "video/webm"
+            }
+        };
+
+        const prompt = `You are a KYC voice consistency verification AI.
+
+Analyse the provided video recording and perform a voice consistency check:
+
+1. TRANSCRIPTION: Transcribe all spoken words from the video.
+2. IDENTITY MATCH: The person should state their full name. Expected name: "${context.expectedName || "Not provided"}".
+   Check if the spoken name matches or is close to the expected name.
+3. LIVENESS INDICATORS: Check for:
+   - Natural speech patterns (not a recording played back)
+   - Lip sync matches audio
+   - Background audio is consistent with a live recording
+   - No obvious deepfake artefacts in voice/video sync
+4. DURATION: The video should contain at least ${context.minDuration} seconds of active content.
+
+Respond ONLY with valid JSON (no markdown):
+{
+  "passed": true,
+  "confidenceScore": 0.92,
+  "transcribedText": "My name is John Doe ...",
+  "details": "Voice matches expected name. Natural speech detected. Lip sync consistent."
+}
+
+If voice check fails:
+{
+  "passed": false,
+  "confidenceScore": 0.45,
+  "transcribedText": "...",
+  "details": "Reason voice check failed."
+}`;
+
+        try {
+            const result  = await model.generateContent([prompt, videoPart]);
+            const text    = result.response.text().trim();
+            const cleaned = text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
+
+            const parsed = JSON.parse(cleaned);
+            return {
+                passed:          !!parsed.passed,
+                confidenceScore: parsed.confidenceScore ?? 0,
+                transcribedText: parsed.transcribedText ?? null,
+                details:         parsed.details ?? null
+            };
+        } catch (err) {
+            throw new Error(`Gemini voice analysis failed: ${err.message}`);
+        }
+    }
+
+    // ─── Video Face Consistency Analysis ──────────────────────────────────────
+
+    /**
+     * Analyse a video clip for face consistency.
+     * Checks that the same face is visible and consistent throughout the video
+     * (no face-swapping, no multiple people, no obscured face).
+     *
+     * @param {string} base64Video
+     * @param {string} mimeType
+     * @param {{ nameOnPAN: string, panLast4: string }} context
+     * @returns {{ passed, details }}
+     */
+    async analyseVideoFace(base64Video, mimeType, context) {
+        if (isMockMode()) {
+            return {
+                passed:  true,
+                details: "Mock mode — face consistency assumed passed."
+            };
+        }
+
+        const client = getGeminiClient();
+        const model  = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const videoPart = {
+            inlineData: {
+                data:     base64Video,
+                mimeType: mimeType || "video/webm"
+            }
+        };
+
+        const prompt = `You are a KYC face consistency verification AI.
+
+Analyse the provided video recording for face consistency:
+
+1. SINGLE PERSON: Verify only one person is present throughout the video.
+2. FACE VISIBILITY: The face must be clearly visible and unobscured for the majority of the recording.
+3. CONSISTENCY: The same face must appear throughout — no face swapping or cuts to a different person.
+4. ANTI-DEEPFAKE: Look for signs of AI-generated or manipulated video (unnatural blinking, texture artefacts, lighting inconsistencies).
+5. LIVE PRESENCE: The person should appear to be physically present (not a photo or screen replay).
+
+Respond ONLY with valid JSON (no markdown):
+{
+  "passed": true,
+  "details": "Single face consistently visible. No deepfake indicators detected. Natural blinking and head movement observed."
+}
+
+If face check fails:
+{
+  "passed": false,
+  "details": "Reason face consistency check failed."
+}`;
+
+        try {
+            const result  = await model.generateContent([prompt, videoPart]);
+            const text    = result.response.text().trim();
+            const cleaned = text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
+
+            const parsed = JSON.parse(cleaned);
+            return {
+                passed:  !!parsed.passed,
+                details: parsed.details ?? null
+            };
+        } catch (err) {
+            throw new Error(`Gemini face consistency analysis failed: ${err.message}`);
+        }
     }
 }
 

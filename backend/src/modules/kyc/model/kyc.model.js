@@ -10,7 +10,7 @@ function decrypt(encryptedText) {
     if (!encryptedText) return null;
     try {
         return encryptionService.decryptPayload(encryptedText);
-    } catch (e) {
+    } catch (_e) {
         return null;
     }
 }
@@ -31,11 +31,11 @@ const kycSchema = new mongoose.Schema(
         },
         aadhaarLast4: {
             type: String,
-            required: true
+            default: null
         },
         aadhaarEncrypted: {
             type: String,
-            required: true
+            default: null
         },
         nameOnAadhaar: {
             type: String,
@@ -55,7 +55,7 @@ const kycSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["pending_otp", "otp_sent", "verified", "failed", "pan_pending", "pan_verified"],
+            enum: ["pending_otp", "otp_sent", "verified", "failed", "pan_pending", "pan_verified", "documents_uploaded"],
             default: "pending_otp"
         },
         // ── PAN Verification Fields ─────────────────────────────────────────
@@ -102,6 +102,38 @@ const kycSchema = new mongoose.Schema(
         ipAddress: {
             type: String,
             default: null
+        },
+
+        // ── Module 2: Identity Collection & Documents ───────────────────────
+        identityStatus: {
+            type: String,
+            enum: ["pending", "aadhaar_captured", "pan_captured", "documents_uploaded", "completed"],
+            default: "pending"
+        },
+        panDocument: {
+            imageHash: { type: String, default: null },
+            mimeType: { type: String, default: null },
+            data: { type: Buffer, default: null },
+            isOriginal: { type: Boolean, default: false },
+            confidence: { type: Number, default: null },
+            extractedPan: { type: String, default: null },
+            extractedName: { type: String, default: null },
+            uploadedAt: { type: Date, default: null }
+        },
+        aadhaarDocument: {
+            frontImageHash: { type: String, default: null },
+            frontMimeType: { type: String, default: null },
+            frontData: { type: Buffer, default: null },
+            backImageHash: { type: String, default: null },
+            backMimeType: { type: String, default: null },
+            backData: { type: Buffer, default: null },
+            isMasked: { type: Boolean, default: true },
+            uploadedAt: { type: Date, default: null }
+        },
+        ekycData: {
+            source: { type: String, default: null },
+            rawResponse: { type: mongoose.Schema.Types.Mixed, default: null },
+            capturedAt: { type: Date, default: null }
         }
     },
     { timestamps: true }
@@ -127,6 +159,13 @@ kycSchema.methods.toSafeJSON = function () {
     const obj = this.toObject();
     delete obj.aadhaarEncrypted;
     delete obj.panEncrypted;
+    if (obj.panDocument) {
+        delete obj.panDocument.data;
+    }
+    if (obj.aadhaarDocument) {
+        delete obj.aadhaarDocument.frontData;
+        delete obj.aadhaarDocument.backData;
+    }
     delete obj._id;
     delete obj.__v;
     return obj;

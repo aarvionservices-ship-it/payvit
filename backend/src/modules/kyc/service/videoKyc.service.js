@@ -209,6 +209,15 @@ class VideoKycService {
                 break;
             }
 
+            case "VIDEO_RECORDING": {
+                // User typed a message instead of uploading video — remind them
+                agentReply = `I'm waiting for your 20-second video recording. ` +
+                    `Please press the Record button, speak clearly (state your name, date of birth, and last 4 mobile digits), ` +
+                    `and keep recording for at least 20 seconds before submitting.`;
+                nextAction = "upload_video";
+                break;
+            }
+
             case "QUESTIONS": {
                 // Determine which question we're on
                 const answeredCount   = session.questionsAnswered;
@@ -440,9 +449,13 @@ class VideoKycService {
             session.steps.liveness.status      = "completed";
             session.steps.liveness.completedAt = new Date();
 
-            newStage     = "QUESTIONS";
-            const firstQ = session.questions[0];
-            agentMessage = `Liveness confirmed! ✅ Now I need to verify your identity with a couple of security questions. ${firstQ.question}`;
+            // Advance to VIDEO_RECORDING stage (20-second live video)
+            newStage     = "VIDEO_RECORDING";
+            agentMessage = `Liveness confirmed! ✅ ` +
+                `Now I need you to record a 20-second live video. ` +
+                `During the recording, please look directly at the camera and clearly state: ` +
+                `your full name, your date of birth, and the last 4 digits of your mobile number. ` +
+                `When you're ready, press the Record button and keep recording for at least 20 seconds.`;
             extractedData = { livenessVerified: true };
 
             await auditService.log(
@@ -522,7 +535,7 @@ class VideoKycService {
                     ...(existingKyc?.status !== "verified" && { status: "pan_verified" })
                 }
             },
-            { upsert: true, new: true }
+            { returnDocument: "after", upsert: true }
         );
 
         // Mark session complete
@@ -662,7 +675,7 @@ class VideoKycService {
      * Generates + persists an OTP for the session.
      * Returns the agent message to send to the client.
      */
-    async _sendOtp(session, user, ipAddress) {
+    async _sendOtp(session, user, _ipAddress) {
         let otp;
         const mock = isMockMode();
 

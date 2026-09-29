@@ -10,7 +10,7 @@ function decrypt(encryptedText) {
     if (!encryptedText) return null;
     try {
         return encryptionService.decryptPayload(encryptedText);
-    } catch (e) {
+    } catch (_e) {
         return null;
     }
 }

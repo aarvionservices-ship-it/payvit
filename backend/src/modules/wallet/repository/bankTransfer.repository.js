@@ -41,7 +41,7 @@ class BankTransferRepository {
         ]);
 
         // Strip encrypted beneficiary account number before returning
-        const data = rawData.map(({ toAccountNumberEncrypted, ...safe }) => safe);
+        const data = rawData.map(({ toAccountNumberEncrypted: _acc, ...safe }) => safe);
 
         return { data, total, page, limit };
     }

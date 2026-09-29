@@ -1,11 +1,9 @@
-const argon2 = require("argon2");
 const mongoose = require("mongoose");
 const snowflake = require("../../../core/utils/distributedId");
 const AppError = require("../../../core/utils/AppError");
 
 const walletRepo = require("../repository/wallet.repository");
 const transactionRepo = require("../repository/transaction.repository");
-const userRepo = require("../../user/repository/user.repository");
 const walletService = require("./wallet.service");
 
 class TransferService {
@@ -88,7 +86,7 @@ class TransferService {
             const receiverAfter = receiverBefore + amount;
             const txnId = snowflake.nextId();
 
-            const txn = await transactionRepo.create({
+            await transactionRepo.create({
                 txnId,
                 fromUserId,
                 toUserId,
@@ -203,7 +201,7 @@ class TransferService {
                 originalTxnId: txnId
             };
 
-        } catch (err) {
+        } catch (_err) {
             await session.abortTransaction();
             session.endSession();
             throw new AppError("Reversal failed. Please try again.", 500);

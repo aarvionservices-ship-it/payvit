@@ -35,7 +35,7 @@ class PublicKeyController {
                 }
             });
 
-        } catch (error) {
+        } catch (_error) {
 
             return res.status(500).json({
                 success: false,

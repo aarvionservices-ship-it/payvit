@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const snowflake = require("../../../core/utils/distributedId");
 
 const walletSchema = new mongoose.Schema(
     {

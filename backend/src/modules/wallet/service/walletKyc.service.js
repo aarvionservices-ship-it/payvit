@@ -286,7 +286,7 @@ class WalletKycService {
     // Offers
 
     // Returns available wallet offers. - In production these would come from a database/CMS.
-    async getOffers(userId) {
+    async getOffers(_userId) {
         // Static offers — can be replaced with a DB query later
         const offers = [
             {
@@ -323,7 +323,7 @@ class WalletKycService {
 
     // Private Helpers
 
-    async _verifyBankAccount(accountNumber, ifscCode) {
+    async _verifyBankAccount(accountNumber, _ifscCode) {
         // Mock penny-drop verification
         // In production: integrate with Razorpay or Cashfree penny-drop API
         const mockMode = true; // Toggle via env config when real API is available

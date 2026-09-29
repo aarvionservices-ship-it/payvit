@@ -1,4 +1,3 @@
-const argon2 = require("argon2");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 

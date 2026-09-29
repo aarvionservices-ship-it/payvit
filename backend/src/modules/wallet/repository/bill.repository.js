@@ -42,7 +42,7 @@ class BillRepository {
         return await Bill.findOneAndUpdate(
             { billId, userId },
             { $set: updates },
-            { returnDocument: "after", new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -71,7 +71,7 @@ class BillRepository {
                     transactionId: transactionId || null
                 }
             },
-            { returnDocument: "after", new: true }
+            { returnDocument: "after" }
         );
     }
 }

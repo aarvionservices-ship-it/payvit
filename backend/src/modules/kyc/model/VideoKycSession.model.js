@@ -40,14 +40,16 @@ const stepSchema = new mongoose.Schema(
 
 // ─── Video KYC Session Stages ─────────────────────────────────────────────────
 //
-//  WELCOME → PAN_CAPTURE → LIVENESS_CHECK → QUESTIONS → OTP_SENT → COMPLETE
+//  WELCOME → PAN_CAPTURE → LIVENESS_CHECK → VIDEO_RECORDING → QUESTIONS → OTP_SENT → COMPLETE
 //
+// VIDEO_RECORDING: 20-second live video, voice + face consistency, secure storage.
 // Each stage is advanced by the agent service after validating the user's input.
 
 const STAGES = [
     "WELCOME",
     "PAN_CAPTURE",
     "LIVENESS_CHECK",
+    "VIDEO_RECORDING",
     "QUESTIONS",
     "OTP_SENT",
     "COMPLETE"
@@ -116,6 +118,28 @@ const videoKycSessionSchema = new mongoose.Schema(
         selfieCapturedAt: { type: Date, default: null },
         selfieHash:       { type: String, default: null },
 
+        // ── 20-Second Live Video Recording ──────────────────────────────────
+        videoRecording: {
+            recorded:        { type: Boolean, default: false },
+            storageKey:      { type: String, default: null },   // S3 / GridFS object key
+            secureUrl:       { type: String, default: null },   // pre-signed or internal URL
+            durationSeconds: { type: Number, default: null },   // actual recorded duration
+            recordedAt:      { type: Date,   default: null },
+            sizeBytes:       { type: Number, default: null },
+            sha256Hash:      { type: String, default: null },   // integrity hash
+            mimeType:        { type: String, default: "video/webm" },
+            encryptionKeyId: { type: String, default: null }    // KMS key reference
+        },
+
+        // ── Voice Consistency Check ─────────────────────────────────────────
+        voiceConsistency: {
+            passed:          { type: Boolean, default: false },
+            confidenceScore: { type: Number, default: null },
+            transcribedText: { type: String, default: null },
+            checkedAt:       { type: Date,   default: null },
+            details:         { type: String, default: null }
+        },
+
         // ── PAN data (extracted via Gemini Vision OCR) ──────────────────────
         panEncrypted: { type: String, default: null },  // RSA-encrypted PAN
         panLast4:     { type: String, default: null },
@@ -135,11 +159,12 @@ const videoKycSessionSchema = new mongoose.Schema(
 
         // ── Step tracking ──────────────────────────────────────────────────
         steps: {
-            welcome:       { type: stepSchema, default: () => ({ status: "pending" }) },
-            panCapture:    { type: stepSchema, default: () => ({ status: "pending" }) },
-            liveness:      { type: stepSchema, default: () => ({ status: "pending" }) },
-            questions:     { type: stepSchema, default: () => ({ status: "pending" }) },
-            otpVerify:     { type: stepSchema, default: () => ({ status: "pending" }) }
+            welcome:         { type: stepSchema, default: () => ({ status: "pending" }) },
+            panCapture:      { type: stepSchema, default: () => ({ status: "pending" }) },
+            liveness:        { type: stepSchema, default: () => ({ status: "pending" }) },
+            videoRecording:  { type: stepSchema, default: () => ({ status: "pending" }) },
+            questions:       { type: stepSchema, default: () => ({ status: "pending" }) },
+            otpVerify:       { type: stepSchema, default: () => ({ status: "pending" }) }
         },
 
         // ── Conversation log (full dialogue with AI agent) ─────────────────

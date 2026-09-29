@@ -31,8 +31,9 @@
  *   pong_session     { expiresAt }                         — keepalive response
  */
 
-const jwt            = require("jsonwebtoken");
-const liveService    = require("../service/videoKycLive.service");
+const jwt                    = require("jsonwebtoken");
+const liveService            = require("../service/videoKycLive.service");
+const videoRecordingService  = require("../service/videoRecording.service");
 const { createSocketRateLimiter } = require("../../../core/socket/socketRateLimiter");
 
 // ─── Namespace Registration ───────────────────────────────────────────────────
@@ -197,6 +198,58 @@ function registerVideoKycNamespace(io) {
             }
         });
 
+        // ── upload_video ─────────────────────────────────────────────────
+        // Client emits this after recording a 20-second video at VIDEO_RECORDING stage.
+        // Payload: { sessionId, video (base64), mimeType, durationSeconds }
+        socket.on("upload_video", async ({ sessionId, video, mimeType, durationSeconds } = {}) => {
+            try {
+                if (!limiter.allow("message")) {
+                    return _emitError(socket, "RATE_LIMITED", "Please wait before uploading again.");
+                }
+                if (!sessionId)        return _emitError(socket, "MISSING_SESSION_ID", "sessionId is required.");
+                if (!video)            return _emitError(socket, "MISSING_VIDEO", "video (base64) is required.");
+                if (durationSeconds === undefined || durationSeconds === null) {
+                    return _emitError(socket, "MISSING_DURATION", "durationSeconds is required.");
+                }
+
+                socket.emit("agent_typing", {});
+
+                const cleanedVideo = video.replace(/^data:video\/[a-z0-9]+;base64,/, "");
+                const cleanedMime  = mimeType || "video/webm";
+                const duration     = Number(durationSeconds);
+
+                const result = await videoRecordingService.processVideoRecording(
+                    sessionId,
+                    userId,
+                    cleanedVideo,
+                    cleanedMime,
+                    duration,
+                    ip
+                );
+
+                socket.emit("video_result", {
+                    agentMessage: result.agentMessage,
+                    stage:        result.stage,
+                    videoData:    result.videoData
+                });
+
+                // Broadcast stage advance to other sockets in the session room
+                if (result.stage && result.stage !== "VIDEO_RECORDING") {
+                    socket.to(sessionId).emit("stage_change", {
+                        stage:      result.stage,
+                        nextAction: "answer_questions"
+                    });
+                }
+
+                console.log(
+                    `[VideoKYC Socket] VideoUpload | socket=${socket.id} | session=${sessionId}` +
+                    ` | duration=${duration}s | stage=${result.stage}`
+                );
+            } catch (err) {
+                _handleError(socket, err);
+            }
+        });
+
         // ── verify_otp ────────────────────────────────────────────────────────
         socket.on("verify_otp", async ({ sessionId, otp } = {}) => {
             try {
@@ -257,7 +310,7 @@ function registerVideoKycNamespace(io) {
                 if (!sessionId) return;
                 const snapshot = await liveService.getSession(sessionId, userId);
                 socket.emit("pong_session", { expiresAt: snapshot.expiresAt });
-            } catch (err) {
+            } catch (_err) {
                 // Silent on ping errors — don't expose internals
                 socket.emit("pong_session", { expiresAt: null });
             }

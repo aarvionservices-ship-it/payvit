@@ -41,7 +41,7 @@ class SavingsGoalRepository {
         return await SavingsGoal.findOneAndUpdate(
             { goalId, userId },
             { $set: updates },
-            { returnDocument: "after", new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -66,7 +66,7 @@ class SavingsGoalRepository {
         return await SavingsGoal.findOneAndUpdate(
             { goalId, userId },
             { $set: { savedAmount: newSaved, status: newStatus } },
-            { returnDocument: "after", new: true }
+            { returnDocument: "after" }
         );
     }
 }

@@ -60,7 +60,7 @@ class LeadRepository {
         return Lead.findOneAndUpdate(
             { leadId },
             { $push: { requestedDocuments: { name, status: 'pending' } } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -74,7 +74,7 @@ class LeadRepository {
                     "requestedDocuments.$.uploadedAt": new Date()
                 }
             },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -88,7 +88,7 @@ class LeadRepository {
                     "documents.$.uploadedAt": new Date()
                 }
             },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 

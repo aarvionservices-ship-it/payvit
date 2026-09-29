@@ -41,7 +41,7 @@ class WalletService {
 
     async setPin(userId, pin) {
         this._validatePin(pin);
-        const wallet = await this._getWalletOrThrow(userId);
+        await this._getWalletOrThrow(userId);
 
         const hashedPin = await argon2.hash(pin.toString());
         await walletRepo.setPin(userId, hashedPin);
@@ -627,7 +627,7 @@ class WalletService {
             try {
                 const url = new URL(qrData.replace("payvit://", "http://"));
                 userId = url.searchParams.get("userId");
-            } catch (err) {
+            } catch (_err) {
                 throw new AppError("Invalid QR code format.", 400);
             }
         }
@@ -799,7 +799,7 @@ class WalletService {
             }
 
             return verify.verify(publicKeyPem, signatureBuffer);
-        } catch (err) {
+        } catch (_err) {
             return false;
         }
     }

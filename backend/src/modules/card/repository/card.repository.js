@@ -26,7 +26,7 @@ class CardRepository {
     }
 
     async update(id, updateData) {
-        return await Card.findByIdAndUpdate(id, updateData, { new: true });
+        return await Card.findByIdAndUpdate(id, updateData, { returnDocument: "after" });
     }
 
     async delete(id) {

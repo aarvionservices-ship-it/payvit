@@ -116,7 +116,7 @@ class FaceVerificationService {
             throw new AppError("User ID is required.", 400);
         }
 
-        const { cleanedBase64, cleanedMime, imageHash, quality } = this.validateImageQuality(base64Image, mimeType);
+        const { cleanedMime, imageHash, quality } = this.validateImageQuality(base64Image, mimeType);
         const selfieId = `slf_${snowflake.nextId()}`;
 
         await auditService.log(

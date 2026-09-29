@@ -50,7 +50,7 @@ class AuthRepository {
         return User.findOneAndUpdate(
             { userId },
             { $set: data },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 

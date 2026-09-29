@@ -22,7 +22,7 @@ class BankAccountRepository {
     async findByUser(userId) {
         const accounts = await BankAccount.find({ userId, isActive: true }).lean();
         // Strip encrypted field from results
-        return accounts.map(({ accountNumberEncrypted, ...safe }) => safe);
+        return accounts.map(({ accountNumberEncrypted: _acc, ...safe }) => safe);
     }
 
     async findById(id) {

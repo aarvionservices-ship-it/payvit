@@ -26,7 +26,7 @@ class LoanRepository {
     }
 
     async update(id, updateData) {
-        return await Loan.findByIdAndUpdate(id, updateData, { new: true });
+        return await Loan.findByIdAndUpdate(id, updateData, { returnDocument: "after" });
     }
 
     async delete(id) {
