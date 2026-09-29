@@ -109,6 +109,15 @@ async function uploadSelfie(token, sessionId) {
         .send({ sessionId, image: DUMMY_B64, mimeType: DUMMY_MIME, task: "liveness" });
 }
 
+/** POST /upload-video */
+async function uploadVideo(token, sessionId, durationSeconds = 20) {
+    return request(app)
+        .post("/api/v1/kyc/video/upload-video")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ sessionId, video: DUMMY_B64, mimeType: "video/webm", durationSeconds });
+}
+
+
 /** POST /chat */
 async function chat(token, sessionId, message) {
     return request(app)
@@ -164,10 +173,16 @@ async function driveToOtpSent() {
     expect(p1.status).toBe(200);
     expect(p1.body.data.stage).toBe("LIVENESS_CHECK");
 
-    // LIVENESS_CHECK → QUESTIONS via liveness upload
+    // LIVENESS_CHECK → VIDEO_RECORDING via liveness upload
     const l1 = await uploadSelfie(token, sessionId);
     expect(l1.status).toBe(200);
-    expect(l1.body.data.stage).toBe("QUESTIONS");
+    expect(l1.body.data.stage).toBe("VIDEO_RECORDING");
+
+    // VIDEO_RECORDING → QUESTIONS via upload-video
+    const v1 = await uploadVideo(token, sessionId);
+    expect(v1.status).toBe(200);
+    expect(v1.body.data.stage).toBe("QUESTIONS");
+
 
     // Retrieve the two drawn questions
     const sr = await getSession(token, sessionId);
@@ -291,14 +306,23 @@ describe("2. Happy Path — WELCOME → PAN_CAPTURE → LIVENESS → QUESTIONS �
         expect(sess2.nameOnPAN).toBe(MOCK_NAME);
         expect(sess2.panEncrypted).toBeUndefined();
 
-        // ── Step 6: upload-image liveness → QUESTIONS ─────────────────────────
+        // ── Step 6: upload-image liveness → VIDEO_RECORDING ───────────────────
         const selfieRes = await uploadSelfie(token, sessionId);
         expect(selfieRes.status).toBe(200);
         expect(selfieRes.body.success).toBe(true);
         const d6 = selfieRes.body.data;
-        expect(d6.stage).toBe("QUESTIONS");
+        expect(d6.stage).toBe("VIDEO_RECORDING");
         expect(d6.extractedData.livenessVerified).toBe(true);
         expect(typeof d6.agentMessage).toBe("string");
+
+        // ── Step 6b: upload-video 20s recording → QUESTIONS ───────────────────
+        const videoRes = await uploadVideo(token, sessionId, 20);
+        expect(videoRes.status).toBe(200);
+        expect(videoRes.body.success).toBe(true);
+        const d6b = videoRes.body.data;
+        expect(d6b.stage).toBe("QUESTIONS");
+        expect(typeof d6b.agentMessage).toBe("string");
+
 
         // ── Step 7: GET session confirms liveness ─────────────────────────────
         const sr3 = await getSession(token, sessionId);
@@ -615,6 +639,7 @@ describe("6. Security Questions — wrong answer terminates session immediately"
         await chat(token, sessionId, "Ready");
         await uploadPan(token, sessionId);
         await uploadSelfie(token, sessionId);
+        await uploadVideo(token, sessionId);
 
         const sr = await getSession(token, sessionId);
         const { questions } = sr.body.data;

@@ -295,10 +295,15 @@ describe("VideoKYC Socket — Session Lifecycle (mock mode)", () => {
         const panResult = await waitFor(socket, "frame_result", 8000);
         expect(panResult.stage).toBe("LIVENESS_CHECK");
 
-        // 4. LIVENESS_CHECK → QUESTIONS
+        // 4. LIVENESS_CHECK → VIDEO_RECORDING
         socket.emit("send_frame", { sessionId, image: DUMMY_B64, mimeType: DUMMY_MIME, task: "liveness" });
         const livenessResult = await waitFor(socket, "frame_result", 8000);
-        expect(livenessResult.stage).toBe("QUESTIONS");
+        expect(livenessResult.stage).toBe("VIDEO_RECORDING");
+
+        // 4b. VIDEO_RECORDING → QUESTIONS via upload_video
+        socket.emit("upload_video", { sessionId, video: DUMMY_B64, mimeType: "video/webm", durationSeconds: 20 });
+        const videoResult = await waitFor(socket, "video_result", 8000);
+        expect(videoResult.stage).toBe("QUESTIONS");
 
         // 5. Get session to know which questions were assigned
         socket.emit("get_session", { sessionId });

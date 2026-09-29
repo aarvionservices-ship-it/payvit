@@ -121,3 +121,4 @@ keys/*.pem
 
 # Data files
 data/
+uploads/

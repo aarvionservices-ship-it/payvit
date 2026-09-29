@@ -633,7 +633,7 @@ If the faces do NOT match:
         }
 
         const client = getGeminiClient();
-        const model  = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model  = client.getGenerativeModel({ model: config.gemini.model });
 
         const videoPart = {
             inlineData: {
@@ -710,7 +710,7 @@ If voice check fails:
         }
 
         const client = getGeminiClient();
-        const model  = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model  = client.getGenerativeModel({ model: config.gemini.model });
 
         const videoPart = {
             inlineData: {
