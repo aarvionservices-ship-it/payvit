@@ -10,22 +10,42 @@
 // ─── Reference Coordinates for Major Indian Cities & State Centroids ──────────
 const CITY_COORDINATES = {
     mumbai:      { lat: 19.0760, lon: 72.8777, state: "maharashtra" },
+    bombay:      { lat: 19.0760, lon: 72.8777, state: "maharashtra" },
+    thane:       { lat: 19.2183, lon: 72.9781, state: "maharashtra" },
+    "navi mumbai": { lat: 19.0330, lon: 73.0297, state: "maharashtra" },
     pune:        { lat: 18.5204, lon: 73.8567, state: "maharashtra" },
     nagpur:      { lat: 21.1458, lon: 79.0882, state: "maharashtra" },
+    nashik:      { lat: 19.9975, lon: 73.7898, state: "maharashtra" },
+    aurangabad:  { lat: 19.8762, lon: 75.3433, state: "maharashtra" },
+    "chhatrapati sambhajinagar": { lat: 19.8762, lon: 75.3433, state: "maharashtra" },
     delhi:       { lat: 28.6139, lon: 77.2090, state: "delhi" },
     "new delhi": { lat: 28.6139, lon: 77.2090, state: "delhi" },
     noida:       { lat: 28.5355, lon: 77.3910, state: "uttar pradesh" },
+    "greater noida": { lat: 28.4744, lon: 77.5040, state: "uttar pradesh" },
+    ghaziabad:   { lat: 28.6692, lon: 77.4538, state: "uttar pradesh" },
+    faridabad:   { lat: 28.4089, lon: 77.3178, state: "haryana" },
     gurugram:    { lat: 28.4595, lon: 77.0266, state: "haryana" },
     gurgaon:     { lat: 28.4595, lon: 77.0266, state: "haryana" },
     bengaluru:   { lat: 12.9716, lon: 77.5946, state: "karnataka" },
     bangalore:   { lat: 12.9716, lon: 77.5946, state: "karnataka" },
     mysuru:      { lat: 12.2958, lon: 76.6394, state: "karnataka" },
+    mangaluru:   { lat: 12.9141, lon: 74.8560, state: "karnataka" },
+    mangalore:   { lat: 12.9141, lon: 74.8560, state: "karnataka" },
     hyderabad:   { lat: 17.3850, lon: 78.4867, state: "telangana" },
+    secunderabad:{ lat: 17.4399, lon: 78.4983, state: "telangana" },
+    warangal:    { lat: 17.9689, lon: 79.5941, state: "telangana" },
     chennai:     { lat: 13.0827, lon: 80.2707, state: "tamil nadu" },
+    madras:      { lat: 13.0827, lon: 80.2707, state: "tamil nadu" },
     coimbatore:  { lat: 11.0168, lon: 76.9558, state: "tamil nadu" },
+    madurai:     { lat: 9.9252,  lon: 78.1198, state: "tamil nadu" },
     kolkata:     { lat: 22.5726, lon: 88.3639, state: "west bengal" },
+    calcutta:    { lat: 22.5726, lon: 88.3639, state: "west bengal" },
+    howrah:      { lat: 22.5958, lon: 88.2636, state: "west bengal" },
     ahmedabad:   { lat: 23.0225, lon: 72.5714, state: "gujarat" },
     surat:       { lat: 21.1702, lon: 72.8311, state: "gujarat" },
+    vadodara:    { lat: 22.3072, lon: 73.1812, state: "gujarat" },
+    baroda:      { lat: 22.3072, lon: 73.1812, state: "gujarat" },
+    rajkot:      { lat: 22.3039, lon: 70.8022, state: "gujarat" },
     jaipur:      { lat: 26.9124, lon: 75.7873, state: "rajasthan" },
     jodhpur:     { lat: 26.2389, lon: 73.0243, state: "rajasthan" },
     lucknow:     { lat: 26.8467, lon: 80.9462, state: "uttar pradesh" },
@@ -143,10 +163,18 @@ function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
  * @returns {{ lat: number, lon: number, precision: "city"|"pincode"|"state"|"default" }}
  */
 function resolveAddressCoordinates(address = {}) {
-    const cityKey = (address.city || "").trim().toLowerCase();
-    if (cityKey && CITY_COORDINATES[cityKey]) {
-        const c = CITY_COORDINATES[cityKey];
-        return { lat: c.lat, lon: c.lon, precision: "city" };
+    const rawCity = (address.city || "").trim().toLowerCase();
+    if (rawCity) {
+        if (CITY_COORDINATES[rawCity]) {
+            const c = CITY_COORDINATES[rawCity];
+            return { lat: c.lat, lon: c.lon, precision: "city" };
+        }
+        // Substring matching for city variants (e.g., "South Delhi", "Navi Mumbai")
+        for (const [key, coords] of Object.entries(CITY_COORDINATES)) {
+            if (rawCity.includes(key) || (key.length >= 4 && key.includes(rawCity))) {
+                return { lat: coords.lat, lon: coords.lon, precision: "city" };
+            }
+        }
     }
 
     const pinStr = (address.pincode || "").toString().trim();
@@ -158,10 +186,17 @@ function resolveAddressCoordinates(address = {}) {
         }
     }
 
-    const stateKey = (address.state || "").trim().toLowerCase();
-    if (stateKey && STATE_CENTROIDS[stateKey]) {
-        const s = STATE_CENTROIDS[stateKey];
-        return { lat: s.lat, lon: s.lon, precision: "state" };
+    const rawState = (address.state || "").trim().toLowerCase();
+    if (rawState) {
+        if (STATE_CENTROIDS[rawState]) {
+            const s = STATE_CENTROIDS[rawState];
+            return { lat: s.lat, lon: s.lon, precision: "state" };
+        }
+        for (const [key, coords] of Object.entries(STATE_CENTROIDS)) {
+            if (rawState.includes(key) || (key.length >= 4 && key.includes(rawState))) {
+                return { lat: coords.lat, lon: coords.lon, precision: "state" };
+            }
+        }
     }
 
     // Default centroid (Nagpur, central India)

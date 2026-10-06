@@ -86,4 +86,6 @@ const addressVerificationSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+addressVerificationSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model("AddressVerification", addressVerificationSchema);

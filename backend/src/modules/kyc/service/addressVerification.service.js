@@ -49,8 +49,9 @@ class AddressVerificationService {
             throw new AppError("GPS data is required for address verification", 400);
         }
 
-        // Strict consent enforcement
-        if (gps.consentGiven !== true) {
+        // Enforce explicit user consent (boolean or string)
+        const consent = gps.consentGiven === true || gps.consentGiven === "true";
+        if (!consent) {
             throw new AppError("User consent is required to capture GPS coordinates for address verification", 400);
         }
 
@@ -91,8 +92,8 @@ class AddressVerificationService {
         const { permanentAddress, sameAsPermanent } = payload;
         let currentAddress = payload.currentAddress;
 
-        // If sameAsPermanent is true, inherit permanent address
-        if (sameAsPermanent) {
+        const isSame = sameAsPermanent === true || sameAsPermanent === "true";
+        if (isSame || !currentAddress) {
             currentAddress = { ...permanentAddress };
         }
 
