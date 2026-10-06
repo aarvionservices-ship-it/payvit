@@ -7,7 +7,7 @@
  *   WELCOME → PAN_CAPTURE → LIVENESS_CHECK → QUESTIONS → OTP_SENT → COMPLETE
  *
  * Delegates:
- *   - AI decisions  → videoKycAgent.service.js
+ *   - Agent responses → videoKycAgent.service.js (deterministic, no external API)
  *   - OTP send/hash → bcrypt + emailTemplateService
  *   - Persistence   → VideoKycSession model + Kyc model
  *   - Audit trail   → auditService
@@ -313,7 +313,7 @@ class VideoKycService {
 
     // ─── 3. Upload Image (PAN OCR, Liveness, Anti-Spoof, Face Match) ──────────
     /**
-     * Accepts a base64 image and runs Gemini Vision to extract PAN or check liveness.
+     * Accepts a base64 image and runs analysis to extract PAN or check liveness.
      *
      * @param {string} sessionId
      * @param {string} userId
@@ -344,7 +344,7 @@ class VideoKycService {
             throw new AppError("Image data is required.", 400);
         }
 
-        // Run Gemini vision
+        // Run image analysis
         const visionResult = await agent.analyseImage(base64Image, mimeType, task);
 
         if (!visionResult.success) {

@@ -1,8 +1,8 @@
 /**
  * Video KYC AI Agent — Integration Test Suite
  *
- * Tests the complete AI-driven Video KYC flow end-to-end.
- * All AI (Gemini) calls are bypassed — VIDEO_KYC_MOCK_MODE is always true in tests.
+ * Tests the complete Video KYC flow end-to-end.
+ * External AI calls are not used — deterministic internal mock agent is used.
  *
  * ┌──────────────────────────────────────────────────────────────┐
  * │  Mock values                                                 │
@@ -50,7 +50,7 @@ const MOCK_PAN    = "ADHPB7061Q";
 const MOCK_PAN_L4 = "061Q";                   // last 4 of ADHPB7061Q
 const MOCK_NAME   = "VARSHA SHARMA";           // mock OCR result
 
-// 1×1 white PNG — valid base64 image; Gemini is bypassed in test/mock mode
+// 1×1 white PNG — valid base64 image; internal mock agent is used
 const DUMMY_B64  = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 const DUMMY_MIME = "image/png";
 

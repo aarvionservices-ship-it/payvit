@@ -227,7 +227,7 @@ const htmlContent = `<!DOCTYPE html>
   <div class="subtitle">Complete Backend Architecture, Operational Workflow & Code Guide</div>
   <div class="meta-tags">
     <span class="meta-tag">Stack: Node.js / Express</span>
-    <span class="meta-tag">AI: Google Gemini 2.0 Flash</span>
+    <span class="meta-tag">AI: Internal Video KYC Engine</span>
     <span class="meta-tag">Realtime: Socket.io</span>
     <span class="meta-tag">Security: RSA-2048 & Bcrypt</span>
   </div>
@@ -265,7 +265,7 @@ const htmlContent = `<!DOCTYPE html>
     <tr>
       <td><strong>AI Agent Engine</strong></td>
       <td><code>src/modules/kyc/service/videoKycAgent.service.js</code></td>
-      <td>Interfaces with Google Gemini 2.0 Flash for conversations and Gemini Vision for OCR/liveness.</td>
+      <td>Internal Video KYC Agent for conversations and vision analysis (OCR/liveness).</td>
     </tr>
     <tr>
       <td><strong>Realtime Socket</strong></td>
@@ -317,7 +317,7 @@ const htmlContent = `<!DOCTYPE html>
 
 <h3>Phase 3: PAN Card OCR & RSA Encryption</h3>
 <p>
-  The user holds their PAN card to the camera. The frame is uploaded in base64. Gemini Vision extracts the 10-character PAN number and full name. The backend:
+  The user holds their PAN card to the camera. The frame is uploaded in base64. The OCR engine extracts the 10-character PAN number and full name. The backend:
 </p>
 <ul>
   <li>Validates format using the standard PAN regex (<code>[A-Z]{5}[0-9]{4}[A-Z]{1}</code>).</li>
@@ -327,7 +327,7 @@ const htmlContent = `<!DOCTYPE html>
 
 <h3>Phase 4: Facial Liveness Verification</h3>
 <p>
-  The user captures a selfie. Gemini Vision inspects the image to confirm a live human face, checks for good lighting, and verifies anti-spoofing flags (ensuring it is not a photo of a screen or printed paper).
+  The user captures a selfie. The engine inspects the image to confirm a live human face, checks for good lighting, and verifies anti-spoofing flags (ensuring it is not a photo of a screen or printed paper).
 </p>
 
 <h3>Phase 5: Dynamic In-Memory Security Questions</h3>
@@ -407,11 +407,11 @@ const htmlContent = `<!DOCTYPE html>
 <div class="page-break"></div>
 
 <h3>C. AI Vision OCR & Liveness (<code>videoKyc.service.js</code> & <code>videoKycAgent.service.js</code>)</h3>
-<pre><code><span class="comment">// Upload image handler: delegates to Gemini Vision and handles encryption</span>
+<pre><code><span class="comment">// Upload image handler: delegates to image analysis engine and handles encryption</span>
 <span class="keyword">async</span> <span class="function">uploadImage</span>(sessionId, userId, base64Image, mimeType, task, ipAddress) {
     <span class="keyword">const</span> session = <span class="keyword">await</span> <span class="keyword">this</span>._getActiveSession(sessionId, userId);
 
-    <span class="comment">// Execute Gemini 2.0 Vision analysis</span>
+    <span class="comment">// Execute vision analysis</span>
     <span class="keyword">const</span> visionResult = <span class="keyword">await</span> agent.analyseImage(base64Image, mimeType, task);
     <span class="keyword">if</span> (!visionResult.success) {
         <span class="keyword">return</span> { agentMessage: <span class="string">"Image scan failed. Please try again with good lighting."</span>, stage: session.stage };

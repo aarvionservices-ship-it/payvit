@@ -37,14 +37,7 @@ module.exports = {
 
     frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
 
-    // ─── Gemini AI ─────────────────────────────────────────────────────────────
-    gemini: {
-        apiKey: process.env.GEMINI_API_KEY || "",
-        model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite"
-    },
-
     // ─── Video KYC Agent ───────────────────────────────────────────────────────
-    // Set VIDEO_KYC_MOCK_MODE=false in .env to use real Gemini AI
     videoKyc: {
         mockMode: process.env.VIDEO_KYC_MOCK_MODE !== "false",
         mockOtp: process.env.VIDEO_KYC_MOCK_OTP || "654321",

@@ -140,7 +140,7 @@ const videoKycSessionSchema = new mongoose.Schema(
             details:         { type: String, default: null }
         },
 
-        // ── PAN data (extracted via Gemini Vision OCR) ──────────────────────
+        // ── PAN data (extracted via OCR) ───────────────────────────────────
         panEncrypted: { type: String, default: null },  // RSA-encrypted PAN
         panLast4:     { type: String, default: null },
         nameOnPAN:    { type: String, default: null },

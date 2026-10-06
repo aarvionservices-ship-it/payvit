@@ -7,7 +7,7 @@
  *   HTTP rate limiters (express-rate-limit) only cover REST endpoints.
  *   WebSocket connections bypass them entirely, so without this an attacker
  *   could flood the socket with `send_frame` events containing large base64
- *   payloads or spam `send_message` to exhaust Gemini API quota.
+ *   payloads or spam `send_message` to exhaust server resources.
  *
  * Strategy — token bucket per socket per event group:
  *   - "message"  bucket  : send_message + send_frame (AI calls)

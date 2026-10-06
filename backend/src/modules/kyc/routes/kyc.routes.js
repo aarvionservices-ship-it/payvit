@@ -70,7 +70,7 @@ router.get("/video/session/:sessionId", authenticate, videoKycController.getSess
 // POST /api/v1/kyc/video/upload-video
 //   Body: { sessionId, video (base64), mimeType, durationSeconds }
 //   Processes 20-second video: duration check, SHA-256 hash, AES-256 encryption,
-//   secure storage, voice consistency + face consistency via Gemini Vision
+//   secure storage, voice consistency + face consistency analysis
 router.post("/video/upload-video", authenticate, videoRecordingController.uploadVideo);
 
 // GET  /api/v1/kyc/video/recording/:sessionId/metadata

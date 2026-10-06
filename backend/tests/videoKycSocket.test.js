@@ -9,7 +9,7 @@
  * Run:  npm run test:socket
  */
 
-// Force mock mode for all tests — no real Gemini calls
+// Force mock mode for all tests
 process.env.VIDEO_KYC_MOCK_MODE = "true";
 
 const http      = require("http");

@@ -5,7 +5,7 @@
  *
  * Responsibilities:
  *   - Wraps the existing videoKyc.service.js (all KYC business logic lives there)
- *   - Adds streaming Gemini responses (token-by-token via chatStream)
+ *   - Adds streaming agent responses (token-by-token via chatStream)
  *   - Manages in-memory socket→session mapping
  *   - Extends session TTL on user activity (keepalive)
  *   - Exposes clean, socket-friendly methods consumed by videoKycSocket.handler.js
@@ -88,22 +88,17 @@ class VideoKycLiveService {
             return videoKycService.chat(sessionId, userId, message, ipAddress);
         }
 
-        // ── OTP_SENT / COMPLETE: no Gemini call needed ────────────────────────
+        // ── OTP_SENT / COMPLETE: no agent call needed ────────────────────────
         if (stage === "OTP_SENT" || stage === "COMPLETE") {
             return videoKycService.chat(sessionId, userId, message, ipAddress);
         }
 
-        // ── Conversational stages: stream Gemini reply for live-call feel ──────
+        // ── Conversational stages: stream agent reply for live-call feel ──────
         // We stream the reply token-by-token so the client sees the agent
         // "typing" in real time.  The full reply is assembled from the stream
         // and we then call videoKycService.chat() ONLY for its DB write / stage
-        // transition — we skip the Gemini call inside that service by calling
-        // it in mock mode? No — we just accept the extra call for correctness.
+        // transition.
         //
-        // Trade-off: 2 Gemini calls per conversational message:
-        //   Call 1 — streaming, for UX (chunks emitted to client)
-        //   Call 2 — non-streaming inside videoKycService.chat(), for DB write
-        // Both calls use the same prompt so replies are effectively equivalent.
         // The client renders the streamed version; the DB stores the service version.
         const history = (session.agentLog || []).slice(-10);
 

@@ -6,7 +6,7 @@
  *   2. Enforce minimum 20-second duration.
  *   3. Compute SHA-256 integrity hash.
  *   4. Encrypt the video with AES-256-GCM and store securely (GridFS / local FS).
- *   5. Run Gemini Vision / Audio analysis for:
+ *   5. Run internal Vision / Audio analysis for:
  *        a) Voice consistency  – does the spoken identity match the user record?
  *        b) Face consistency   – is the same face visible throughout the video?
  *   6. Advance session stage to QUESTIONS on success.
@@ -197,8 +197,7 @@ class VideoRecordingService {
         // ── 7. AI Voice Consistency Analysis ─────────────────────────────────
         //  We send the first frame as a still image + instruct the agent
         //  to evaluate voice and face consistency from the video metadata.
-        //  (Full audio transcription requires a speech-to-text provider;
-        //   here we use Gemini's multimodal capabilities via a frame + prompt.)
+        //  (Handled via internal agent service.)
         const voiceResult = await this._analyseVoiceConsistency(
             cleanedBase64, cleanedMime, session, userId
         );
@@ -393,9 +392,8 @@ class VideoRecordingService {
     }
 
     /**
-     * Use Gemini multimodal to check voice consistency.
-     * Sends the base64 video + a structured prompt instructing the model
-     * to verify the speaker's identity matches the session user metadata.
+     * Check voice consistency.
+     * Evaluates the speaker's identity against session user metadata.
      *
      * In MOCK mode (VIDEO_KYC_MOCK_MODE !== "false"), returns a passing result.
      *
@@ -414,7 +412,7 @@ class VideoRecordingService {
         }
 
         try {
-            // Delegate to the agent service which wraps Gemini Vision
+            // Delegate to the internal agent service
             const result = await agent.analyseVideoVoice(base64Video, mimeType, {
                 expectedName:  session.nameOnPAN,
                 sessionId:     session.sessionId,
@@ -441,7 +439,7 @@ class VideoRecordingService {
 
     /**
      * Check face consistency throughout the video.
-     * Uses the Gemini agent to verify the same face appears consistently.
+     * Uses the agent to verify the same face appears consistently.
      *
      * @returns {{ passed, details }}
      */

@@ -427,7 +427,7 @@ class IdentityCollectionService {
             });
         }
 
-        // Run Gemini Vision OCR & Originality Analysis
+        // Run OCR & Originality Analysis
         const analysis = await agent.analyseImage(cleanedBase64, cleanMime, "pan_document_analysis");
 
         if (!analysis.success) {
