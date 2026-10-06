@@ -5,8 +5,9 @@ const authenticate                 = require("../../../middlewares/auth.middlewa
 const kycController                = require("../controller/kyc.controller");
 const videoKycController           = require("../controller/videoKyc.controller");
 const videoRecordingController     = require("../controller/videoRecording.controller");
-const faceVerificationController   = require("../controller/faceVerification.controller");
-const identityCollectionController = require("../controller/identityCollection.controller");
+const faceVerificationController    = require("../controller/faceVerification.controller");
+const identityCollectionController  = require("../controller/identityCollection.controller");
+const addressVerificationController = require("../controller/addressVerification.controller");
 
 // ─── Module 2: Identity Collection ───────────────────────────────────────────
 // POST /api/v1/kyc/identity/aadhaar             — body: { aadhaarNumber }
@@ -106,5 +107,19 @@ router.post("/face/match", authenticate, faceVerificationController.matchFaces);
 //   Body: { selfieImage, selfieMime, documentImage, documentMime, challengeId, threshold }
 //   All-in-one pipeline: Quality -> Anti-Spoof -> Liveness -> 1:1 Face Match
 router.post("/face/verify", authenticate, faceVerificationController.verifyFullFace);
+
+// ─── Module 4: Address Verification & GPS Risk Check ─────────────────────────
+// POST /api/v1/kyc/address/verify
+//   Body: { permanentAddress, currentAddress, sameAsPermanent, gps: { latitude, longitude, accuracy, consentGiven, consentTimestamp } }
+//   Collects permanent/current address, captures GPS with user consent, and executes basic risk check
+router.post("/address/verify", authenticate, addressVerificationController.verifyAddress);
+
+// GET  /api/v1/kyc/address/status
+//   Returns user's latest address verification status and GPS risk assessment
+router.get("/address/status", authenticate, addressVerificationController.getAddressStatus);
+
+// POST /api/v1/kyc/address/risk-preview
+//   Dry-run risk check for address vs GPS coordinates without persisting
+router.post("/address/risk-preview", authenticate, addressVerificationController.checkRiskPreview);
 
 module.exports = router;

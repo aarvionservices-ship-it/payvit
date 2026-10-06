@@ -8,6 +8,7 @@
     "test": "jest --runInBand --forceExit",
     "test:face": "jest tests/faceVerification.test.js --runInBand --forceExit --verbose",
     "test:video": "jest tests/videoKyc.test.js --runInBand --forceExit --verbose",
+    "test:address": "jest tests/addressVerification.test.js --runInBand --forceExit --verbose",
     "test:socket": "jest tests/videoKycSocket.test.js --runInBand --forceExit --verbose --testTimeout=35000",
     "keys:generate": "node ./scripts/generateKeys.js",
     "data:import": "node ./seeders/seedCards.js",
