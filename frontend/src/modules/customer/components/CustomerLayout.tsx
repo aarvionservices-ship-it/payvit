@@ -10,7 +10,8 @@ import {
   Bell,
   Search,
   MoreHorizontal,
-  Wallet
+  Wallet,
+  ScanFace
 } from 'lucide-react';
 
 export default function CustomerLayout() {
@@ -24,6 +25,8 @@ export default function CustomerLayout() {
     { path: '/customer/favorites', icon: Heart, label: 'Saved Offers' },
     { path: '/customer/applications', icon: FileText, label: 'My Applications' },
     { path: '/customer/profile', icon: UserCircle, label: 'Profile' },
+    { path: '/customer/video-kyc', icon: ScanFace, label: 'Video KYC'},
+
   ];
 
   const bottomNavItems = [
@@ -31,6 +34,7 @@ export default function CustomerLayout() {
     { path: '/customer/offers', icon: Briefcase, label: 'Offers' },
     { path: '/customer/applications', icon: FileText, label: 'Applied' },
     { path: '/customer/profile', icon: UserCircle, label: 'Profile' },
+    { path: '/customer/video-kyc', icon: ScanFace, label: 'KYC' },
   ];
 
   return (

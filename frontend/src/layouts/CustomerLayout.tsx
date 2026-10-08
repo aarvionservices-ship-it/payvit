@@ -7,7 +7,8 @@ import {
     LogOut,
     Search,
     Zap,
-    Wallet
+    Wallet,
+    ScanFace
 } from "lucide-react"
 import { useAuthStore } from "../store/auth.store"
 import { clsx, type ClassValue } from "clsx"
@@ -27,6 +28,7 @@ export default function CustomerLayout() {
         { label: "Offers", href: "/customer/offers", icon: Search },
         { label: "Services", href: "/customer/services", icon: Zap },
         { label: "Wallet", href: "/customer/wallet", icon: Wallet },
+        { label: "Video KYC", href: "/customer/video-kyc", icon: ScanFace },
         { label: "Applications", href: "/customer/applications", icon: ClipboardList },
         { label: "Favorites", href: "/customer/favorites", icon: Heart },
         { label: "Profile", href: "/customer/profile", icon: User },
