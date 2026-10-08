@@ -15,6 +15,12 @@ const PORT = process.env.PORT || 5000;
 async function start() {
 
     await connectDB();
+    try {
+        const seedEmailTemplates = require("../seeders/seedEmailTemplates");
+        await seedEmailTemplates();
+    } catch (tplErr) {
+        console.warn("[Server] Email template seeding skipped:", tplErr.message);
+    }
 
     // Wrap Express app in a native http.Server so Socket.io can intercept
     // WebSocket upgrade requests on the same port as REST.

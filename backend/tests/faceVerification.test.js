@@ -4,16 +4,15 @@
  * Test suite for Module 3: Face and Liveness Verification
  */
 
-const request                 = require("supertest");
-const jwt                     = require("jsonwebtoken");
-const app                     = require("../src/app");
+const request = require("supertest");
+const jwt = require("jsonwebtoken");
+const app = require("../src/app");
 const faceVerificationService = require("../src/modules/kyc/service/faceVerification.service");
-const videoKycService         = require("../src/modules/kyc/service/videoKyc.service");
-const VideoKycSession         = require("../src/modules/kyc/model/VideoKycSession.model");
-const config                  = require("../src/core/config/env.config");
+const videoKycService = require("../src/modules/kyc/service/videoKyc.service");
+const VideoKycSession = require("../src/modules/kyc/model/VideoKycSession.model");
+const config = require("../src/core/config/env.config");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const JWT_SECRET =
     process.env.JWT_ACCESS_SECRET ||
     "345e972cbbab29aa0d9c3b620f1fc6af148277c66cefa11c23d87c848f2ecd2e170a730030622b51494ea0867239aad72a3f8b43a77c95bff6d3e17b8c95217b";
@@ -28,7 +27,7 @@ function generateToken(userId, role = "customer") {
 
 // Generate valid 5KB base64 JPEG mock image
 const VALID_BASE64_IMAGE = Buffer.alloc(5 * 1024, "a").toString("base64");
-const VALID_DOC_BASE64   = Buffer.alloc(6 * 1024, "b").toString("base64");
+const VALID_DOC_BASE64 = Buffer.alloc(6 * 1024, "b").toString("base64");
 
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
@@ -62,7 +61,7 @@ describe("Module 3: Face and Liveness Verification", () => {
 
         it("should strip data URI prefixes correctly", () => {
             const dataUri = `data:image/png;base64,${VALID_BASE64_IMAGE}`;
-            const result  = faceVerificationService.validateImageQuality(dataUri);
+            const result = faceVerificationService.validateImageQuality(dataUri);
             expect(result.cleanedMime).toBe("image/png");
             expect(result.cleanedBase64).toBe(VALID_BASE64_IMAGE);
         });
@@ -93,7 +92,7 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/capture-selfie")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    image:    VALID_BASE64_IMAGE,
+                    image: VALID_BASE64_IMAGE,
                     mimeType: "image/jpeg"
                 });
 
@@ -119,9 +118,9 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/liveness-check")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    image:    VALID_BASE64_IMAGE,
+                    image: VALID_BASE64_IMAGE,
                     mimeType: "image/jpeg",
-                    type:     "passive"
+                    type: "passive"
                 });
 
             expect(res.status).toBe(200);
@@ -159,7 +158,7 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .set("Authorization", `Bearer ${token}`)
                 .send({
                     challengeId,
-                    image:    VALID_BASE64_IMAGE,
+                    image: VALID_BASE64_IMAGE,
                     mimeType: "image/jpeg"
                 });
 
@@ -175,8 +174,8 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .set("Authorization", `Bearer ${token}`)
                 .send({
                     challengeId: "chl_invalid_9999",
-                    image:       VALID_BASE64_IMAGE,
-                    mimeType:    "image/jpeg"
+                    image: VALID_BASE64_IMAGE,
+                    mimeType: "image/jpeg"
                 });
 
             expect(res.status).toBe(400);
@@ -190,7 +189,7 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/anti-spoof")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    image:    VALID_BASE64_IMAGE,
+                    image: VALID_BASE64_IMAGE,
                     mimeType: "image/jpeg"
                 });
 
@@ -208,11 +207,11 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/match")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    selfieImage:   VALID_BASE64_IMAGE,
-                    selfieMime:    "image/jpeg",
+                    selfieImage: VALID_BASE64_IMAGE,
+                    selfieMime: "image/jpeg",
                     documentImage: VALID_DOC_BASE64,
-                    documentMime:  "image/jpeg",
-                    threshold:     0.75
+                    documentMime: "image/jpeg",
+                    threshold: 0.75
                 });
 
             expect(res.status).toBe(200);
@@ -227,11 +226,11 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/match")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    selfieImage:   VALID_BASE64_IMAGE,
-                    selfieMime:    "image/jpeg",
+                    selfieImage: VALID_BASE64_IMAGE,
+                    selfieMime: "image/jpeg",
                     documentImage: VALID_DOC_BASE64,
-                    documentMime:  "image/jpeg",
-                    threshold:     0.90
+                    documentMime: "image/jpeg",
+                    threshold: 0.90
                 });
 
             expect(res.status).toBe(200);
@@ -245,11 +244,11 @@ describe("Module 3: Face and Liveness Verification", () => {
                 .post("/api/v1/kyc/face/verify")
                 .set("Authorization", `Bearer ${token}`)
                 .send({
-                    selfieImage:   VALID_BASE64_IMAGE,
-                    selfieMime:    "image/jpeg",
+                    selfieImage: VALID_BASE64_IMAGE,
+                    selfieMime: "image/jpeg",
                     documentImage: VALID_DOC_BASE64,
-                    documentMime:  "image/jpeg",
-                    threshold:     0.75
+                    documentMime: "image/jpeg",
+                    threshold: 0.75
                 });
 
             expect(res.status).toBe(200);

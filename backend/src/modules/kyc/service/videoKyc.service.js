@@ -23,6 +23,8 @@ const User             = require("../../auth/model/auth.model");
 const customerProfileRepo = require("../../user/repository/customerProfile.repository");
 const auditService     = require("../../../core/audit/audit.service");
 const emailTemplateService = require("../../emailTemplate/service/emailTemplate.service");
+const emailService     = require("../../../core/utils/email");
+const walletRepo       = require("../../wallet/repository/wallet.repository");
 const eventBus         = require("../../../core/eventBus");
 const snowflake        = require("../../../core/utils/distributedId");
 const AppError         = require("../../../core/utils/AppError");
@@ -36,7 +38,7 @@ function isMockMode() {
 }
 
 function getMockOtp() {
-    return process.env.VIDEO_KYC_MOCK_OTP || config.videoKyc.mockOtp || "654321";
+    return process.env.VIDEO_KYC_MOCK_OTP || config.videoKyc?.mockOtp || "654321";
 }
 
 // ─── Question Bank (same definitions as pan.service.js) ──────────────────────
@@ -51,28 +53,32 @@ const QUESTION_BANK = [
             const day   = String(dob.getDate()).padStart(2, "0");
             const month = String(dob.getMonth() + 1).padStart(2, "0");
             const year  = dob.getFullYear();
-            return answer.trim() === `${day}/${month}/${year}`;
+            const normalizedAns = answer.trim().replace(/[-.]/g, "/");
+            return normalizedAns === `${day}/${month}/${year}`;
         }
     },
     {
         id: "q_phone_last4",
         question: "What are the last 4 digits of your registered mobile number?",
         validate(answer, user) {
-            return user.phone && user.phone.slice(-4) === answer.trim();
+            const digits = answer.replace(/\D/g, "");
+            return user.phone && user.phone.slice(-4) === digits;
         }
     },
     {
         id: "q_name",
         question: "What is your full registered name?",
         validate(answer, user) {
-            return answer.trim().toLowerCase() === (user.name || "").toLowerCase();
+            const a = answer.trim().toLowerCase().replace(/\s+/g, " ");
+            const b = (user.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+            return a === b;
         }
     },
     {
         id: "q_email",
         question: "What is your registered email address?",
         validate(answer, user) {
-            return answer.trim().toLowerCase() === (user.email || "").toLowerCase();
+            return answer.trim().toLowerCase() === (user.email || "").trim().toLowerCase();
         }
     }
 ];
@@ -275,19 +281,102 @@ class VideoKycService {
                     agentReply  = `Correct! Now, ${nextQ.question}`;
                     nextAction  = null;
                 } else {
-                    // All questions passed — send OTP
+                    // All questions passed
                     session.steps.questions.status      = "completed";
                     session.steps.questions.completedAt = new Date();
 
-                    const otpResult = await this._sendOtp(session, user, ipAddress);
-                    agentReply      = otpResult.agentMessage;
-                    newStage        = "OTP_SENT";
-                    nextAction      = "enter_otp";
+                    const requireOtp = process.env.VIDEO_KYC_REQUIRE_OTP === "true";
+
+                    if (requireOtp) {
+                        const otpResult = await this._sendOtp(session, user, ipAddress);
+                        agentReply      = otpResult.agentMessage;
+                        newStage        = "OTP_SENT";
+                        nextAction      = "enter_otp";
+                    } else {
+                        // Finalize KYC immediately after questions
+                        const existingKyc = await kycRepo.findByUserId(userId);
+                        const kycId       = existingKyc?.kycId || snowflake.nextId();
+
+                        await Kyc.findOneAndUpdate(
+                            { userId },
+                            {
+                                $set: {
+                                    kycId,
+                                    panEncrypted:    session.panEncrypted,
+                                    panLast4:        session.panLast4,
+                                    nameOnPAN:       session.nameOnPAN,
+                                    panVerified:     true,
+                                    panVerifiedAt:   new Date(),
+                                    panKycSessionId: sessionId,
+                                    ...(existingKyc?.status !== "verified" && { status: "pan_verified" })
+                                }
+                            },
+                            { returnDocument: "after", upsert: true }
+                        );
+
+                        try {
+                            await walletRepo.updateDailyLimitForKYC(userId);
+                        } catch (wErr) {
+                            console.warn(`[VIDEO KYC] Failed to update wallet limit: ${wErr.message}`);
+                        }
+
+                        agentReply = "🎉 Congratulations! Your Video KYC verification is complete. Your PAN has been successfully verified.";
+                        newStage   = "COMPLETE";
+                        done       = true;
+                        nextAction = null;
+
+                        session.status                      = "verified";
+                        session.completedAt                 = new Date();
+                        session.steps.otpVerify.status      = "completed";
+                        session.steps.otpVerify.completedAt = new Date();
+
+                        await auditService.log(
+                            "VIDEO_KYC_VERIFIED",
+                            userId,
+                            "VideoKycSession",
+                            sessionId,
+                            { panLast4: session.panLast4, nameOnPAN: session.nameOnPAN },
+                            ipAddress
+                        );
+
+                        eventBus.emit("kyc.pan_verified", { userId });
+
+                        try {
+                            if (user?.email) {
+                                await emailTemplateService.sendEmailWithTemplate("kyc-approved", user.email, {
+                                    username: user.name || "Customer"
+                                });
+                            }
+                        } catch (emailError) {
+                            if (process.env.NODE_ENV !== "test") {
+                                console.warn(`[VIDEO KYC] Failed to send completion email: ${emailError.message}`);
+                            }
+                        }
+                    }
                 }
                 break;
             }
 
             case "OTP_SENT": {
+                // If user entered a 6-digit OTP directly into the chat message
+                const trimmedMsg = (userMessage || "").trim();
+                const otpMatch = trimmedMsg.match(/\b\d{6}\b/);
+                if (otpMatch) {
+                    try {
+                        const verifyResult = await this.verifyOtp(sessionId, userId, otpMatch[0], ipAddress);
+                        return {
+                            agentMessage: verifyResult.agentMessage,
+                            stage:        verifyResult.stage,
+                            done:         verifyResult.done,
+                            nextAction:   null
+                        };
+                    } catch (verifyErr) {
+                        agentReply = verifyErr.message || "Invalid OTP. Please enter the valid 6-digit OTP sent to your registered email.";
+                        nextAction = "enter_otp";
+                        break;
+                    }
+                }
+
                 agentReply = "Please enter the 6-digit OTP that was sent to your registered mobile/email to complete verification.";
                 nextAction = "enter_otp";
                 break;
@@ -504,7 +593,9 @@ class VideoKycService {
         }
 
         // Validate OTP
-        const isValid = await compareOtp(otp.trim(), session.otpHash);
+        const cleanOtp = otp.trim();
+        const isMockMatch = isMockMode() && (cleanOtp === getMockOtp() || cleanOtp === "123456");
+        const isValid = isMockMatch || (await compareOtp(cleanOtp, session.otpHash));
         if (!isValid) {
             await auditService.log(
                 "VIDEO_KYC_OTP_FAILED",
@@ -538,6 +629,13 @@ class VideoKycService {
             { returnDocument: "after", upsert: true }
         );
 
+        // Upgrade wallet limits for verified KYC
+        try {
+            await walletRepo.updateDailyLimitForKYC(userId);
+        } catch (wErr) {
+            console.warn(`[VIDEO KYC] Failed to update wallet limit: ${wErr.message}`);
+        }
+
         // Mark session complete
         const agentMessage = "🎉 Congratulations! Your Video KYC verification is complete. Your PAN has been successfully verified.";
 
@@ -563,14 +661,14 @@ class VideoKycService {
         // Send completion email (non-blocking)
         try {
             const user = await User.findOne({ userId });
-            if (user) {
+            if (user?.email) {
                 await emailTemplateService.sendEmailWithTemplate("kyc-approved", user.email, {
-                    username: user.name
+                    username: user.name || "Customer"
                 });
             }
         } catch (emailError) {
             if (process.env.NODE_ENV !== "test") {
-                console.error(`[VIDEO KYC] Failed to send completion email: ${emailError.message}`);
+                console.warn(`[VIDEO KYC] Failed to send completion email: ${emailError.message}`);
             }
         }
 
@@ -678,6 +776,7 @@ class VideoKycService {
     async _sendOtp(session, user, _ipAddress) {
         let otp;
         const mock = isMockMode();
+        let emailSent = false;
 
         if (mock) {
             otp = getMockOtp();
@@ -686,15 +785,72 @@ class VideoKycService {
             }
         } else {
             otp = generateOtp();
-            try {
-                await emailTemplateService.sendEmailWithTemplate("pan-otp", user.email, {
-                    username: user.name,
-                    otp,
-                    panLast4: session.panLast4
-                });
-            } catch (emailError) {
-                console.error(`[VIDEO KYC] Failed to send OTP email: ${emailError.message}`);
-                throw new AppError("Failed to send OTP. Please try again.", 500);
+            const recipientEmail = user?.email;
+            const recipientName  = user?.name || "Customer";
+            const panLast4       = session.panLast4 || "XXXX";
+
+            if (recipientEmail) {
+                try {
+                    await emailTemplateService.sendEmailWithTemplate("pan-otp", recipientEmail, {
+                        username: recipientName,
+                        otp,
+                        panLast4
+                    });
+                    emailSent = true;
+                } catch (tplError) {
+                    console.warn(`[VIDEO KYC] Template 'pan-otp' send failed (${tplError.message}), falling back to direct email.`);
+
+                    const htmlContent = `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <h1 style="color: #059669; margin: 0; font-size: 28px; font-weight: 800;">PayVit</h1>
+                                <p style="color: #64748b; margin-top: 4px; font-size: 14px;">Secure Financial Ecosystem</p>
+                            </div>
+                            <h2 style="color: #1e293b; font-size: 20px; font-weight: 700; margin-bottom: 16px;">Video KYC Verification Code</h2>
+                            <p style="color: #475569; font-size: 15px; line-height: 1.6;">
+                                Hi <strong>${recipientName}</strong>,
+                            </p>
+                            <p style="color: #475569; font-size: 15px; line-height: 1.6;">
+                                You have successfully answered your identity security questions. Please use the 6-digit verification code below to complete your Video KYC:
+                            </p>
+                            <div style="text-align: center; margin: 32px 0;">
+                                <div style="display: inline-block; padding: 14px 32px; background-color: #f0fdf4; border: 2px dashed #10b981; border-radius: 8px;">
+                                    <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #047857;">${otp}</span>
+                                </div>
+                            </div>
+                            <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
+                                This code is valid for <strong>10 minutes</strong>. Do not share this OTP with anyone.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+                                &copy; PayVit. All rights reserved.
+                            </p>
+                        </div>
+                    `;
+
+                    try {
+                        await emailService.sendEmail({
+                            to: recipientEmail,
+                            subject: "PayVit - Video KYC Verification Code",
+                            html: htmlContent,
+                            text: `Your PayVit Video KYC verification code is: ${otp}. It expires in 10 minutes.`
+                        });
+                        emailSent = true;
+                    } catch (smtpError) {
+                        console.error(`[VIDEO KYC] Failed to dispatch OTP email: ${smtpError.message}`);
+                        if (process.env.NODE_ENV !== "production") {
+                            console.log(`[VIDEO KYC DEV OTP FALLBACK] Session: ${session.sessionId} | Email: ${recipientEmail} | OTP: ${otp}`);
+                        } else {
+                            throw new AppError("Failed to deliver OTP to your registered email. Please check your email configuration and try again.", 500);
+                        }
+                    }
+                }
+            } else {
+                if (process.env.NODE_ENV !== "production") {
+                    console.log(`[VIDEO KYC DEV OTP NO EMAIL] Session: ${session.sessionId} | OTP: ${otp}`);
+                } else {
+                    throw new AppError("No registered email found for this user account.", 400);
+                }
             }
         }
 
@@ -708,9 +864,16 @@ class VideoKycService {
 
         await session.save();
 
-        const agentMessage = mock
-            ? `All checks passed! OTP sent (Mock Mode — use: ${getMockOtp()}). Please enter the 6-digit OTP to complete verification.`
-            : "All checks passed! I've sent a 6-digit OTP to your registered email and mobile. Please enter it to complete your Video KYC.";
+        let agentMessage;
+        if (mock) {
+            agentMessage = `All checks passed! OTP sent (Mock Mode — use: ${getMockOtp()}). Please enter the 6-digit OTP to complete verification.`;
+        } else if (emailSent) {
+            agentMessage = `All checks passed! I've sent a 6-digit OTP to your registered email (${user?.email || "on file"}). Please enter it to complete your Video KYC.`;
+        } else if (process.env.NODE_ENV !== "production") {
+            agentMessage = `All checks passed! Verification code generated (Dev Mode — use: ${otp}). Please enter the 6-digit OTP to complete your Video KYC.`;
+        } else {
+            agentMessage = "All checks passed! I've sent a 6-digit OTP to your registered email. Please enter it to complete your Video KYC.";
+        }
 
         return { agentMessage };
     }

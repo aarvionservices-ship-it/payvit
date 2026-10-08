@@ -2,6 +2,7 @@
 require("dotenv").config({ quiet: true });
 process.env.NODE_ENV = "test";
 process.env.VIDEO_KYC_MOCK_MODE = "true";
+process.env.VIDEO_KYC_REQUIRE_OTP = "true";
 process.env.PAN_MOCK_MODE = "true";
 process.env.AADHAAR_MOCK_MODE = "true";
 
