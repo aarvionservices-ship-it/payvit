@@ -6,7 +6,9 @@ import {
     User, 
     LogOut,
     Search,
-    Zap
+    Zap,
+    Wallet,
+    ScanFace
 } from "lucide-react"
 import { useAuthStore } from "../store/auth.store"
 import { clsx, type ClassValue } from "clsx"
@@ -25,22 +27,24 @@ export default function CustomerLayout() {
         { label: "Dashboard", href: "/customer", icon: LayoutDashboard, end: true },
         { label: "Offers", href: "/customer/offers", icon: Search },
         { label: "Services", href: "/customer/services", icon: Zap },
+        { label: "Wallet", href: "/customer/wallet", icon: Wallet },
+        { label: "Video KYC", href: "/customer/video-kyc", icon: ScanFace },
         { label: "Applications", href: "/customer/applications", icon: ClipboardList },
         { label: "Favorites", href: "/customer/favorites", icon: Heart },
         { label: "Profile", href: "/customer/profile", icon: User },
     ]
 
     return (
-        <div className="flex min-h-screen bg-slate-50 text-slate-900">
+        <div className="flex min-h-screen bg-slate-100 text-slate-900 ">
             {/* Sidebar - Desktop Only */}
-            <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col z-50">
-                <div className="p-6 border-b border-slate-100">
+            <aside className="fixed inset-y-0 left-0 w-64 bg-white border border-slate-200 hidden lg:flex flex-col z-50 rounded-2xl  ml-4 my-4">
+                <div className="p-6 ">
                     <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                         <div className="size-10 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/20">
                             A
                         </div>
                         <div>
-                            <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">PayVit</h1>
+                            <h1 className="text-lg font-bold text-slate-900/80 tracking-tight">PayVit</h1>
                             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Fast Finance</p>
                         </div>
                     </Link>
@@ -59,7 +63,7 @@ export default function CustomerLayout() {
                                 cn(
                                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                     isActive 
-                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 font-bold" 
+                                        ? "bg-slate-600 text-white shadow-lg shadow-indigo-500/30 font-bold" 
                                         : "text-slate-600 hover:bg-slate-50"
                                 )
                             }
@@ -89,24 +93,24 @@ export default function CustomerLayout() {
             <MobileNav navItems={navItems} />
 
             {/* Main Content Area */}
-            <div className="flex-1 lg:pl-64 flex flex-col min-h-screen h-screen overflow-hidden">
-                <header className="h-16 lg:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40 shrink-0">
+            <div className="flex-1 lg:pl-[272px] flex flex-col min-h-screen h-screen overflow-hidden ">
+                <header className="h-16 lg:h-20 bg-white/80 backdrop-blur-md border border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40 shrink-0 rounded-2xl mt-4 mx-4 ml-4">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="lg:hidden flex items-center gap-2">
                             <div className="size-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/20">
                                 A
                             </div>
-                            <span className="font-extrabold text-slate-900 tracking-tight text-sm">PayVit</span>
+                            <span className="font-extrabold text-slate-900/80 tracking-tight text-sm">PayVit</span>
                         </Link>
                         <div className="hidden lg:block">
-                            <h2 className="text-xl font-bold text-slate-900 leading-tight">
+                            <h2 className="text-xl font-semibold text-slate-900/80 leading-tight">
                                 Hello, {user?.name?.split(' ')[0] || 'Customer'}
                             </h2>
-                            <p className="text-xs text-slate-500 font-medium">Welcome back to your finance hub</p>
+                            <p className="text-xs font-medium text-slate-900/80">Welcome back to your finance hub</p>
                         </div>
                         <div className="lg:hidden h-8 w-[1px] bg-slate-200 mx-1"></div>
                         <div className="lg:hidden">
-                            <h2 className="text-sm font-bold text-slate-900 leading-tight">
+                            <h2 className="text-sm font-bold text-slate-900/80 leading-tight">
                                 {user?.name?.split(' ')[0] || 'Customer'}
                             </h2>
                         </div>
@@ -116,7 +120,7 @@ export default function CustomerLayout() {
                         <div className="h-8 lg:h-10 w-[1px] bg-slate-200 hidden sm:block"></div>
                         <div className="flex items-center gap-2 lg:gap-4">
                             <div className="text-right hidden sm:block">
-                                <p className="text-xs lg:text-sm font-bold text-slate-900">{user?.name}</p>
+                                <p className="text-xs lg:text-sm font-semibold text-slate-900/80">{user?.name}</p>
                                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">ID: {user?.userId?.slice(-6).toUpperCase()}</p>
                             </div>
                             <div className="size-10 lg:size-12 rounded-xl lg:rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-lg shadow-indigo-500/20">
@@ -132,7 +136,7 @@ export default function CustomerLayout() {
                     </div>
                 </header>
 
-                <main className="p-4 lg:p-8 overflow-auto grow bg-slate-50/50 pb-24 lg:pb-8">
+                <main className=" overflow-auto grow bg-slate-100 pb-24 lg:pb-8">
                     <div className="max-w-6xl mx-auto">
                         <Outlet />
                     </div>

@@ -12,7 +12,7 @@ module.exports = (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
         req.user = decoded;
         next();
-    } catch (err) {
+    } catch (_err) {
         // Just proceed without user if token is invalid for optional endpoints
         next();
     }

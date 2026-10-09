@@ -18,7 +18,7 @@ class EmailTemplateRepository {
     }
 
     async update(id, data) {
-        return await EmailTemplate.findByIdAndUpdate(id, data, { new: true });
+        return await EmailTemplate.findByIdAndUpdate(id, data, { returnDocument: "after" });
     }
 
     async delete(id) {

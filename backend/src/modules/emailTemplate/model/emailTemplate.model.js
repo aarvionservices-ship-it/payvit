@@ -25,7 +25,7 @@ const emailTemplateSchema = new mongoose.Schema({
     },
     tokens: [{
         type: String,
-        enum: ['username', 'phone', 'email', 'loanAmount', 'cardName', 'rechargeAmount', 'otp', 'link'],
+        enum: ['username', 'phone', 'email', 'loanAmount', 'cardName', 'rechargeAmount', 'otp', 'link', 'panLast4'],
         default: ['username', 'email']
     }],
     isActive: {

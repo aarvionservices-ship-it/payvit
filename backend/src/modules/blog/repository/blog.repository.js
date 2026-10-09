@@ -26,7 +26,7 @@ class BlogRepository {
     }
 
     async update(id, blogData) {
-        return await Blog.findByIdAndUpdate(id, blogData, { new: true });
+        return await Blog.findByIdAndUpdate(id, blogData, { returnDocument: "after" });
     }
 
     async delete(id) {
@@ -34,14 +34,14 @@ class BlogRepository {
     }
 
     async incrementViews(id) {
-        return await Blog.findByIdAndUpdate(id, { $inc: { views: 1 } }, { new: true });
+        return await Blog.findByIdAndUpdate(id, { $inc: { views: 1 } }, { returnDocument: "after" });
     }
 
     async addComment(blogId, commentData) {
         return await Blog.findByIdAndUpdate(
             blogId,
             { $push: { comments: commentData } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -49,7 +49,7 @@ class BlogRepository {
         return await Blog.findOneAndUpdate(
             { _id: blogId, "comments._id": commentId },
             { $set: { "comments.$.approved": approved } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 }

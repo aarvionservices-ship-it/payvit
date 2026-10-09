@@ -14,7 +14,7 @@ class CustomerProfileRepository {
         return await CustomerProfile.findOneAndUpdate(
             { userId },
             { $set: data },
-            { new: true, upsert: true }
+            { returnDocument: "after", upsert: true }
         );
     }
 

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 class KeyLoader {
 
@@ -26,27 +27,41 @@ class KeyLoader {
 
         // DEVELOPMENT (local pem files)
 
-        const publicPath =
+        let publicPath =
             path.join(process.cwd(), "keys", "public.pem");
 
-        const privatePath =
+        let privatePath =
             path.join(process.cwd(), "keys", "private.pem");
 
-        this.publicKey =
-            fs.readFileSync(publicPath, "utf8");
+        if (!fs.existsSync(publicPath) || !fs.existsSync(privatePath)) {
+            publicPath = path.join(__dirname, "../../../keys/public.pem");
+            privatePath = path.join(__dirname, "../../../keys/private.pem");
+        }
 
-        this.privateKey =
-            fs.readFileSync(privatePath, "utf8");
-
-        console.log("RSA keys loaded from PEM files");
+        if (fs.existsSync(publicPath) && fs.existsSync(privatePath)) {
+            this.privateKey = fs.readFileSync(privatePath, "utf8");
+            try {
+                const derived = crypto.createPublicKey(this.privateKey);
+                this.publicKey = derived.export({ type: "spki", format: "pem" });
+            } catch {
+                this.publicKey = fs.readFileSync(publicPath, "utf8");
+            }
+            console.log("RSA keys loaded from PEM files");
+        }
 
     }
 
     getPublicKey() {
+        if (!this.publicKey) {
+            this.loadKeys();
+        }
         return this.publicKey;
     }
 
     getPrivateKey() {
+        if (!this.privateKey) {
+            this.loadKeys();
+        }
         return this.privateKey;
     }
 

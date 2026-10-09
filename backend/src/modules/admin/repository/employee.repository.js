@@ -72,7 +72,7 @@ class EmployeeRepository {
     }
 
     async updateEmployee(userId, data) {
-        return User.findOneAndUpdate({ userId }, { $set: data }, { new: true });
+        return User.findOneAndUpdate({ userId }, { $set: data }, { returnDocument: "after" });
     }
 
 }
